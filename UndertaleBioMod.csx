@@ -625,7 +625,7 @@ global._stepmax = floor((argument0 + argument1) * populationfactor);
 
 importGroup.Import();
 watermark.Content = WATERMARK;
-ScriptMessage($"Successfully patched BioMod v{MOD_VERSION}!");
+ScriptMessage($"Successfully patched BioMod v{MOD_VERSION}!\nPress F1 for help.");
 
 ////////////////////////////////////////////////// HELPERS
 
