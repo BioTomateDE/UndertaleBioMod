@@ -83,7 +83,7 @@ RegisterHotkey(MOVE_FREE_KEY, @"
 global.interact = 0;
 global.flag[17] = 0;
 global._movefree = true;
-");
+", false, true);
 RegisterHotkey(PREVIOUS_ROOM_KEY, "room_goto_previous(); global.entrance = 0; global.interact = 0;");
 RegisterHotkey(NEXT_ROOM_KEY, "room_goto_next(); global.entrance = 0; global.interact = 0;");
 ImplRoomSwitcher();
@@ -125,7 +125,7 @@ if (punchcount < 1) {
 scr_regulartext();
 ");
 
-RegisterHotkey(SHOW_INFO_KEY, "global._info = !global._info;", true);
+RegisterHotkey(SHOW_INFO_KEY, "if (++global._info > 2) global._info = 0;", true);
 RegisterHotkey(HELP_KEY, "global._help = !global._help; global._thegame = obj_time.time % 66 == 0", true);
 ReplaceCode(EventHandler("obj_time", EventSubtypeOther.RoomStart), "room_speed = global._speedhack;");
 
@@ -265,11 +265,13 @@ global._movefree = false;
 
 // Draw Misc Info in the top-left corner
 if (!global._info) exit;
+var verbose = global._info == 2;
 draw_set_color(c_white);
 row = 0;
 if (room == room_battle) {
     draw_text_row('Battle Group: ' + string(global.battlegroup) + ' (' + scr_battlegroup_name(global.battlegroup) + ')');
     draw_text_row('Turn: ' + string(global.turn));
+    draw_text_row('X: ' + string(obj_heart.x) + ', Y: ' + string(obj_heart.y));
     if (global.mercy == 0) {
         var text = 'Flee Chance: ' + string(scr_fleechance()) + '%';
         if (reason != '') {  // set by scr_fleechance
@@ -283,7 +285,19 @@ if (room == room_battle) {
         var avgdmg = round((mindmg + maxdmg) / 2);
         draw_text_row('Attack Damage: ' + string(mindmg) + '-' + string(maxdmg) + ' (Avg: ' + string(avgdmg) + ')');
     }
+    if (verbose && global.invc) {
+        draw_text_row('Invincibility: ' + string(global.invc));
+    }
 } else {
+    if (verbose) {
+        draw_text_row('Frame: ' + string(time));
+        draw_text_row('Entrance: ' + string(global.entrance));
+        if (instance_exists(obj_mainchara)) {
+            draw_text_row('X: ' + string(obj_mainchara.x) + ', Y: ' + string(obj_mainchara.y));
+        } else {
+            draw_text_row('X: ?, Y: ?');
+        }
+    }
     draw_text_row('Room: ' + string(room) + ' (' + room_get_name(room) + ')');
     draw_text_row('Interact: ' + string(global.interact));
     draw_text_row('Plot: ' + string(global.plot));
@@ -299,6 +313,15 @@ if (room == room_battle) {
     }
     if (global.flag[17]) {
         draw_text_row('Menu Disabled');
+    }
+    if (instance_exists(obj_dialoguer) && instance_exists(OBJ_WRITER)) {
+        draw_text_row('Textboxes: ' + string(OBJ_WRITER.stringno+1) + '/' + string(scr_textbox_count()));
+    }
+    if (verbose) {
+        var doortime = scr_doortimer();
+        if (doortime) {
+            draw_text_row('Door Timer: ' + string(doortime));
+        }
     }
 }
 ");
@@ -349,6 +372,7 @@ draw_rectangle(bbox_left, bbox_top, bbox_right, bbox_bottom, true);
 
 ImplNoclip();
 
+List<UndertaleGameObject> doors = new();
 foreach (var obj in Data.GameObjects)
 {
     if (IsParent(obj, "obj_interactable"))
@@ -369,6 +393,7 @@ foreach (var obj in Data.GameObjects)
 
     if (!obj.Visible && IsParent(obj, "obj_doorparent"))
     {
+        doors.Add(obj);
         SuppressRendering(obj);
         obj.Visible = true;
     }
@@ -440,6 +465,12 @@ foreach (var objName in slopes)
     var obj = Data.GameObjects.ByName(objName);
     obj.Visible = true;
     ReplaceCode(EventHandler(obj, EventSubtypeStep.Step), "visible = global._hitbox");
+}
+
+foreach (var ev in GetObject("obj_heart").Events[(int)EventType.Collision])
+{
+    // TODO: does this mess up sans shaker
+    PrependCode(ev.Actions[0].CodeId, "if (global._noclip) exit;");
 }
 
 FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
@@ -583,6 +614,25 @@ if (room_exists(idx)) {
 idx = asset_get_index('room_' + argument0);
 if (room_exists(idx)) {
     return idx;
+}
+");
+
+{
+    string src = "";
+    foreach (var door in doors)
+    {
+        src += "with (" + door.Name.Content + ") { if (touched) { return alarm[2]; }}";
+    }
+    src += "return -1";
+    MakeScript("scr_doortimer", src);
+}
+
+MakeScript("scr_textbox_count", @"
+for (var i = 0; i < 99; i++) {
+    var s = global.msg[i];
+    if (string_pos('%%', s) || string_pos('\C', s)) {
+        return i + 1;
+    }
 }
 ");
 
@@ -894,7 +944,7 @@ if (keyboard_string != '') {
 
 bool IsVisible(UndertaleGameObject obj)
 {
-    if (obj.Visible) return true;
+    if (!obj.Visible) return false;
 
     // If a regular Draw event exists, the object is probably not actually drawn.
     var events = obj.Events[(int)EventType.Draw];
@@ -906,7 +956,7 @@ bool IsVisible(UndertaleGameObject obj)
         }
     }
 
-    return false;
+    return true;
 }
 
 void SuppressRendering(UndertaleGameObject obj)
