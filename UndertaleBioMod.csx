@@ -407,6 +407,7 @@ foreach (var obj in Data.GameObjects)
 
     if (IsParent(obj, "obj_solidparent"))
     {
+        obj.Solid = false;
         bool visible = IsVisible(obj);
         if (!visible)
         {
@@ -686,6 +687,22 @@ if (global._hitbox) {
     draw_line((0), 188, (160), 188);
 }
 ");
+
+
+// Fixes for noclip sometimes not working
+FindReplaceCode(EventHandler("obj_redswitch_1", EventType.Alarm, 3u), "obj_solidparent.solid = 1;", "");
+FindReplaceCode(EventHandler("obj_torhandhold1", EventSubtypeStep.EndStep), "obj_spiketile2.solid = 1;", "");
+FindReplaceCode(EventHandler("obj_holedown", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+FindReplaceCode(EventHandler("obj_asrielbed", EventSubtypeStep.BeginStep), "obj_solidsmall.solid = 1;", "");
+FindReplaceCode(EventHandler("obj_holeup", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+FindReplaceCode(EventHandler("obj_holeup2", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+FindReplaceCode(EventHandler("obj_superdrophole", EventType.Alarm, 3u), "solid = 1;", "");
+
+// Change parent from obj_readable to obj_readablesolid but get rid of `solid = 1`
+GetObject("obj_convenientlamp").ParentId = GetObject("obj_readablesolid");
+FindReplaceCode(EventHandler("obj_convenientlamp", EventSubtypeStep.BeginStep), "solid = 1;", "");
+
+// TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
 
 
 importGroup.Import();
@@ -1042,6 +1059,7 @@ switch (argument0) {
     case 15: return 'Loox & Vegetoid & Migosp';
     case 16: return 'Vegetoid & Vegetoid';
     case 17: return 'Loox & Loox';
+    case 18: return 'Vegetoid';
     case 19: return 'Too much';
     case 20: return 'Napstablook';
     case 21: return 'Loox';
