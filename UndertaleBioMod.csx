@@ -13,7 +13,6 @@ int RAINBOWNESS = 150;          // 0 - 255
 int RAINBOW_SPEED = 30;         // 1 - 200
 int SPEEDHACK_SLOW_FPS = 10;    // 1 - 30
 int SPEEDHACK_FAST_FPS = 150;   // 30 - 1000
-bool ALL_KEYBINDS_GLOBAL = false;
 
 // These keys can be any EventSubtypeKey.
 // https://github.com/UnderminersTeam/UndertaleModTool/blob/stable-0.9/UndertaleModLib/Models/UndertaleGameObject.cs?plain=1#L793-L1165
@@ -78,7 +77,7 @@ if (CheckAlreadyPatched()) return;
 UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN_BECAUSE_ERRORS_OCCURRED");
 
 RegisterHotkey(SHOW_HITBOXES_KEY, "global._hitbox = !global._hitbox;", true);
-RegisterHotkey(NOCLIP_KEY, "global._noclip = !global._noclip;");
+RegisterHotkey(NOCLIP_KEY, "global._noclip = !global._noclip;", true);
 RegisterHotkey(MOVE_FREE_KEY, @"
 global.interact = 0;
 global.flag[17] = 0;
@@ -152,6 +151,7 @@ if (global._speedhack == SPEEDHACK_SLOW_FPS) {
 RegisterHotkey(ROOM_SWITCHER_KEY, "instance_create(0, 0, obj_roomswitcher);", true);
 
 ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
+draw_set_halign(fa_left);
 draw_set_font(fnt_maintext);
 
 var x1 = SCREEN_WIDTH * 0.2;
@@ -439,10 +439,10 @@ SuppressRendering("obj_doorparent");
 
 // TODO: are these still neeeded?
 ShowEvent("obj_bouncetileparent", true);
-Data.GameObjects.ByName("obj_holedown2").Visible = true;
-Data.GameObjects.ByName("obj_holedown3").Visible = true;
+GetObject("obj_holedown2").Visible = true;
+GetObject("obj_holedown3").Visible = true;
 
-Data.GameObjects.ByName("obj_inwaterspot").Visible = false;
+GetObject("obj_inwaterspot").Visible = false;
 ShowEvent("obj_teleigloo", true);
 
 // TODO: this unforunately draws on top of the other overlays.
@@ -462,7 +462,7 @@ if (global._hitbox) {
 string[] slopes = ["obj_sul", "obj_sur", "obj_sdl", "obj_sdr"];
 foreach (var objName in slopes)
 {
-    var obj = Data.GameObjects.ByName(objName);
+    var obj = GetObject(objName);
     obj.Visible = true;
     ReplaceCode(EventHandler(obj, EventSubtypeStep.Step), "visible = global._hitbox");
 }
@@ -663,13 +663,28 @@ while (i <= len) {
 return true;
 ");
 
-Data.GameObjects.ByName("obj_time").Visible = true;
+GetObject("obj_time").Visible = true;
 
 AppendCode(EventHandler("obj_battlecontroller", EventSubtypeOther.RoomEnd), "global.battlegroup = 0;");
 
 AppendCode(Data.Scripts.ByName("scr_steps").Code, @"
 global._stepmin = floor(argument0 * populationfactor);
 global._stepmax = floor((argument0 + argument1) * populationfactor);
+");
+
+
+// Show first Toriel event trigger in room_ruins3
+GetObject("obj_torieltrigger2").Visible = true;
+ReplaceCode(EventHandler("obj_torieltrigger2", EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_set_alpha(1);
+    draw_set_color(c_aqua);
+
+    // Coords taken from gml_Object_obj_torieltrigger2_Step_0 and adjusted for bbox
+    // The numbers in parens are not important, they could be -inf and inf.
+    draw_line(160, (188), 160, (240));
+    draw_line((0), 188, (160), 188);
+}
 ");
 
 
@@ -799,7 +814,6 @@ UndertaleCode EventHandler(string obj, EventType type, EventSubtypeKey key) => E
 
 void RegisterHotkey(EventSubtypeKey key, string code, bool isGlobal = false, bool hold = false)
 {
-    isGlobal |= ALL_KEYBINDS_GLOBAL;
     string objectName = isGlobal ? "obj_time" : "obj_mainchara";
     EventType eventType = hold ? EventType.Keyboard : EventType.KeyPress;
     if (isGlobal)
