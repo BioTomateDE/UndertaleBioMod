@@ -148,7 +148,12 @@ if (global._speedhack == SPEEDHACK_SLOW_FPS) {
 }
 ", true);
 
-RegisterHotkey(ROOM_SWITCHER_KEY, "instance_create(0, 0, obj_roomswitcher);", true);
+RegisterHotkey(ROOM_SWITCHER_KEY, @"
+if (global.interact == 0 || global.interact == 5) {
+    instance_create(0, 0, obj_roomswitcher);
+    global._help = false;
+}
+", true);
 
 ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
 draw_set_halign(fa_left);
@@ -228,16 +233,17 @@ if (global._help) {
     yy = y1 + 28;
 
     scr_draw_help_row(KEY_HELP, 'Shows this help lol');
+    scr_draw_help_row(KEY_ROOMSWITCHER, 'Opens an interface to teleport any room');
+    scr_draw_help_row(KEY_ROOM_PREV, 'Teleports you to the previous room');
+    scr_draw_help_row(KEY_ROOM_NEXT, 'Teleports you to the next room');
     scr_draw_help_row(KEY_INFO, 'Shows miscellaneous info in the top left');
-    scr_draw_help_row(KEY_HITBOXES, 'Shows bounding boxes of Frisk, walls, interactables and events');
+    scr_draw_help_row(KEY_HITBOXES, 'Shows hitboxes of Frisk, walls, interactables and events');
     scr_draw_help_row(KEY_NOCLIP, 'Allows you to move through walls and objects');
     scr_draw_help_row(KEY_FREEMOVE, 'Allows you to move during cutscenes and enables the menu');
     scr_draw_help_row(KEY_SPEEDHACK_SLOW, 'Slows the game down to ' + string(SPEEDHACK_SLOW_FPS) + ' FPS');
     scr_draw_help_row(KEY_SPEEDHACK_FAST, 'Speeds the game up to ' + string(SPEEDHACK_FAST_FPS) + ' FPS');
-    scr_draw_help_row(KEY_PUNCHCARD, 'Gives you a punchcard (needs menu and dialogue closed)');
-    scr_draw_help_row(KEY_ROOM_PREV, 'Teleports you to the previous room');
-    scr_draw_help_row(KEY_ROOM_NEXT, 'Teleports you to the next room');
     scr_draw_help_row(KEY_MASH, 'Skips dialogue as fast as possible while held');
+    scr_draw_help_row(KEY_PUNCHCARD, 'Gives you a punchcard (needs menu and dialogue closed)');
 }
 
 // Draw active modules in rainbow color in the top-right corner
@@ -249,7 +255,7 @@ if (global._hitbox) {
     scr_draw_module_text('Hitboxes');
 }
 if (global._noclip) {
-    scr_draw_module_text('Noclipping');
+    scr_draw_module_text('Noclip');
 }
 if (global._mashing) {
     scr_draw_module_text('Mashing text');
@@ -930,14 +936,12 @@ void ImplRoomSwitcher()
     Data.GameObjects.Add(roomswitcher);
 
     ReplaceCode(EventHandler(roomswitcher, EventType.Create, 0u), @"
-previnteract = global.interact;
-global.interact = 69;
 keyboard_string = '';
 text = '';
 length = 0;
 cursor = 0;
     ");
-    ReplaceCode(EventHandler(roomswitcher, EventType.Destroy, 0u), "global.interact = previnteract;");
+    ReplaceCode(EventHandler(roomswitcher, EventType.Destroy, 0u), "global.interact = 0;");
     ReplaceCode(EventHandler(roomswitcher, EventType.KeyPress, vk_left), @"
 if (keyboard_check(vk_control)) {
     cursor = 0;
@@ -991,6 +995,7 @@ if (keyboard_check(vk_control)) {
 keyboard_string = string_delete(keyboard_string, string_length(keyboard_string), 1);
     ");
     ReplaceCode(EventHandler(roomswitcher, EventSubtypeStep.Step), @"
+global.interact = 1;
 if (keyboard_string != '') {
     var inslen = string_length(keyboard_string);
     text = string_insert(keyboard_string, text, cursor+1);
@@ -1192,22 +1197,22 @@ string KeyName(EventSubtypeKey key) => key switch
     vk_anykey => "Any",
     vk_backspace => "Bksp",
     vk_tab => "Tab",
-    vk_return | vk_enter => "Enter",
-    vk_shift => "Shift",
+    vk_return | vk_enter => "Ent",
+    vk_shift => "Shf",
     vk_control => "Ctrl",
     vk_alt => "Alt",
-    vk_pause => "Pause",
+    vk_pause => "Ps",
     vk_escape => "Esc",
-    vk_space => "Space",
+    vk_space => "Sp",
     vk_pageup => "PgUp",
     vk_pagedown => "PgDn",
     vk_end => "End",
-    vk_home => "Home",
-    vk_left => "Left",
+    vk_home => "Hm",
+    vk_left => "<",
     vk_up => "Up",
-    vk_right => "Right",
+    vk_right => ">",
     vk_down => "Down",
-    vk_printscreen => "PrtSc",
+    vk_printscreen => "Prt",
     vk_insert => "Ins",
     vk_delete => "Del",
     Digit0 => "0",
@@ -1230,11 +1235,11 @@ string KeyName(EventSubtypeKey key) => key switch
     vk_numpad7 => "Num7",
     vk_numpad8 => "Num8",
     vk_numpad9 => "Num9",
-    vk_multiply => "NumMul",
-    vk_add => "NumAdd",
-    vk_subtract => "NumSub",
-    vk_decimal => "NumDec",
-    vk_divide => "NumDiv",
+    vk_multiply => "Mul",
+    vk_add => "Add",
+    vk_subtract => "Sub",
+    vk_decimal => "Dec",
+    vk_divide => "Div",
     vk_f1 => "F1",
     vk_f2 => "F2",
     vk_f3 => "F3",
