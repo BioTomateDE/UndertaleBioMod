@@ -270,11 +270,23 @@ draw_set_color(c_white);
 row = 0;
 if (room == room_battle) {
     draw_text_row('Battle Group: ' + string(global.battlegroup) + ' (' + scr_battlegroup_name(global.battlegroup) + ')');
+
+    var enemyhp = 'Enemy HP: ' + string(global.monsterhp[0]);
+    if (global.monster[1] || global.monster[2]) {
+        enemyhp += ', ' + string(global.monsterhp[1]);
+    }
+    if (global.monster[2]) {
+        enemyhp += ', ' + string(global.monsterhp[2]);
+    }
+    draw_text_row(enemyhp);
+
     draw_text_row('Turn: ' + string(global.turn));
-    draw_text_row('X: ' + string(obj_heart.x) + ', Y: ' + string(obj_heart.y));
+    if (verbose) {
+        draw_text_row('X: ' + string(obj_heart.x) + ', Y: ' + string(obj_heart.y));
+    }
     if (global.mercy == 0) {
         var text = 'Flee Chance: ' + string(scr_fleechance()) + '%';
-        if (reason != '') {  // set by scr_fleechance
+        if (verbose && reason != '') {  // set by scr_fleechance
             text += ' (' + reason + ')';
         }
         draw_text_row(text);
@@ -302,6 +314,9 @@ if (room == room_battle) {
     draw_text_row('Interact: ' + string(global.interact));
     draw_text_row('Plot: ' + string(global.plot));
     if (instance_exists(obj_encountererparent)) {
+        if (verbose) {
+            draw_text_row('Encounterer: ' + object_get_name(obj_encountererparent.object_index));
+        }
         draw_text_row('Steps: ' + string(global.encounter) + '/' + string(floor(obj_encountererparent.steps)));
         draw_text_row('Steps RNG: ' + string(global._stepmin) + '-' + string(global._stepmax) + ' (Avg: ' + string(floor((global._stepmax + global._stepmin) / 2)) + ')');
     }
@@ -443,8 +458,11 @@ ShowEvent("obj_bouncetileparent", true);
 GetObject("obj_holedown2").Visible = true;
 GetObject("obj_holedown3").Visible = true;
 
+GetObject("obj_iceevent").Visible = false;
 GetObject("obj_inwaterspot").Visible = false;
 ShowEvent("obj_teleigloo", true);
+PrependCode(EventHandler("obj_dogetrigger1", EventSubtypeDraw.Draw), "if (sprite_index == spr_event) exit;");
+PrependCode(EventHandler("obj_dogringbell", EventSubtypeDraw.Draw), "if (sprite_index == spr_event) exit;");
 
 // TODO: this unforunately draws on top of the other overlays.
 // I don't know how to prevent this:
@@ -669,8 +687,18 @@ GetObject("obj_time").Visible = true;
 AppendCode(EventHandler("obj_battlecontroller", EventSubtypeOther.RoomEnd), "global.battlegroup = 0;");
 
 AppendCode(Data.Scripts.ByName("scr_steps").Code, @"
-global._stepmin = floor(argument0 * populationfactor);
-global._stepmax = floor((argument0 + argument1) * populationfactor);
+if (alldead == 0) {
+    global._stepmin = floor(argument0 * populationfactor);
+    global._stepmax = floor((argument0 + argument1) * populationfactor);
+}
+else if (alldead == 1) {
+    global._stepmin = (argument0 + round(argument1 / 2)) * 5;
+    global._stepmax = global._stepmin;
+}
+else if (alldead == 2) {
+    global._stepmin = 20;
+    global._stepmax = 20;
+}
 ");
 
 
