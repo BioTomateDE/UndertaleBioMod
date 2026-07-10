@@ -28,6 +28,7 @@ var ROOM_SWITCHER_KEY = R;      // Opens an interface where you can type in room
 var SPEEDHACK_SLOW_KEY = G;     // Decreases the game speed to SPEEDHACK_SLOW_FPS frames per second
 var SPEEDHACK_FAST_KEY = F;     // Increases the game speed to SPEEDHACK_FAST_FPS frames per second
 var GET_PUNCHCARD_KEY = P;      // Gives you a punchcard in the first inventory slot
+var BATTLE_CANCEL_KEY = B;      // Stops an encounter or battle immediately
 // ================================================
 
 const string MOD_VERSION = "0";
@@ -69,6 +70,7 @@ MakeKeyMacro("MASH", MASH_TEXT_KEY);
 MakeKeyMacro("SPEEDHACK_SLOW", SPEEDHACK_SLOW_KEY);
 MakeKeyMacro("SPEEDHACK_FAST", SPEEDHACK_FAST_KEY);
 MakeKeyMacro("PUNCHCARD", GET_PUNCHCARD_KEY);
+MakeKeyMacro("BATTLECANCEL", BATTLE_CANCEL_KEY);
 
 Dictionary<string, (int, UndertaleGameObject)> ObjectMap = new();
 MapObjects();
@@ -97,6 +99,32 @@ with (OBJ_WRITER) {
     }
 }
 ", true, true);
+
+RegisterHotkey(BATTLE_CANCEL_KEY, @"
+if (room == room_battle) {
+    if (global.flag[15] == 0) {
+        audio_stop_sound(global.batmusic);
+    }
+    room_goto(global.currentroom);
+    exit;
+}
+with (obj_battler) {
+    global.interact = 0;
+    instance_destroy();
+    audio_resume_sound(global.currentsong);
+    audio_sound_gain(global.currentsong, 1);
+}
+with (obj_battleblcon) {
+    global.interact = 0;
+    instance_destroy();
+}
+with (obj_tempblack) {
+    instance_destroy();
+}
+with (obj_transheart) {
+    instance_destroy();
+}
+", true);
 
 PrependCode(Data.Scripts.ByName("scr_textskip").Code, @"
 if (global._mashing) {
@@ -252,6 +280,7 @@ if (global._help) {
     scr_draw_help_row(KEY_SPEEDHACK_FAST, 'Speeds the game up to ' + string(SPEEDHACK_FAST_FPS) + ' FPS');
     scr_draw_help_row(KEY_MASH, 'Skips dialogue as fast as possible while held');
     scr_draw_help_row(KEY_PUNCHCARD, 'Gives you a punchcard (needs menu and dialogue closed)');
+    scr_draw_help_row(KEY_BATTLECANCEL, 'Cancels the current encounter/battle');
 }
 
 // Draw active modules in rainbow color in the top-right corner
@@ -442,7 +471,8 @@ foreach (var obj in Data.GameObjects)
     if (IsParent(obj, "obj_solidparent"))
     {
         obj.Solid = false;
-        if (obj.Visible) {
+        if (obj.Visible)
+        {
             ReplaceCode(EventHandler(obj, EventSubtypeDraw.Draw), "draw_self(); event_inherited();");
         }
         obj.Visible = true;
