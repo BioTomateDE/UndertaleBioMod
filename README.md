@@ -49,11 +49,11 @@ It's basically debug mode, but better.
 * Hold a key to automatically mash away dialogue (like holding C in Deltarune)
 
 ## How to use
-1. Download the `UndertaleBioMod.csx` file.
+1. Download the `BioMod.csx` file.
 2. Download [UndertaleModTool](https://github.com/UnderminersTeam/UndertaleModTool).
 3. Open UndertaleModTool and load Undertale 1.01.
 4. In the top panel, click on **Scripts** and then on **Run other script**.
-5. Select the downloaded `UndertaleBioMod.csx` file.
+5. Select the downloaded `BioMod.csx` file.
 6. It should say "Patched successfully". If not, read the error message. Report an Issue here if you can't fix it.
 7. (optional) Make a backup of your Undertale data file.
 8. Press Ctrl+S to save the modified data file.

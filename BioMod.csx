@@ -87,13 +87,26 @@ RegisterHotkey(PREVIOUS_ROOM_KEY, "room_goto_previous(); global.entrance = 0; gl
 RegisterHotkey(NEXT_ROOM_KEY, "room_goto_next(); global.entrance = 0; global.interact = 0;");
 ImplRoomSwitcher();
 
-ReplaceCode(EventHandler("OBJ_WRITER", EventType.Keyboard, MASH_TEXT_KEY), @"
-if (instance_exists(obj_essaystuff)) exit;
+// mashing in battles implemented below somewhje
+RegisterHotkey(MASH_TEXT_KEY, @"
 global._mashing = true;
-if (halt == 0) {
-    stringpos = string_length(originalstring);
+with (OBJ_WRITER) {
+    if (halt) {
+        event_user(0);
+    } else if (instance_exists(obj_dialoguer)) {
+        stringpos = string_length(originalstring);
+    }
 }
-event_user(0);
+", true, true);
+
+PrependCode(Data.Scripts.ByName("scr_textskip").Code, @"
+if (global._mashing) {
+    with (OBJ_WRITER) {
+        stringpos = string_length(originalstring);
+        event_user(0);
+    }
+    exit;
+}
 ");
 
 RegisterHotkey(GET_PUNCHCARD_KEY, @"
@@ -659,6 +672,7 @@ for (var i = 0; i < 99; i++) {
         return i + 1;
     }
 }
+// hopefully never hit lol
 ");
 
 MakeScript("scr_complete_roomname", @"
@@ -737,7 +751,6 @@ GetObject("obj_convenientlamp").ParentId = GetObject("obj_readablesolid");
 FindReplaceCode(EventHandler("obj_convenientlamp", EventSubtypeStep.BeginStep), "solid = 1;", "");
 
 // TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
-
 
 importGroup.Import();
 watermark.Content = WATERMARK;
