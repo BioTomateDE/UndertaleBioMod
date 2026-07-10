@@ -161,10 +161,8 @@ if (global._speedhack == SPEEDHACK_SLOW_FPS) {
 ", true);
 
 RegisterHotkey(ROOM_SWITCHER_KEY, @"
-if (global.interact == 0 || global.interact == 5) {
-    instance_create(0, 0, obj_roomswitcher);
-    global._help = false;
-}
+instance_create(0, 0, obj_roomswitcher);
+global._help = false;
 ", true);
 
 ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
@@ -217,8 +215,6 @@ if (instance_exists(obj_roomswitcher)) {
     draw_set_color(c_aqua);
     draw_rectangle(inputx+cursor_pos, inputy+4, inputx+cursor_pos, inputy+2+font_get_size(fnt_maintext), false);
     draw_set_alpha(1);
-
-    exit;  // <-----
 }
 
 // Draw help
@@ -347,8 +343,13 @@ if (room == room_battle) {
     if (global.flag[17]) {
         draw_text_row('Menu Disabled');
     }
-    if (instance_exists(obj_dialoguer) && instance_exists(OBJ_WRITER)) {
-        draw_text_row('Textboxes: ' + string(OBJ_WRITER.stringno+1) + '/' + string(scr_textbox_count()));
+    // this prevents dozens of rows for the Three Switch Room Skip lol
+    if (!instance_exists(obj_triswitchevent)) {
+        with (OBJ_WRITER) {
+            row = other.row;
+            draw_text_row('Textboxes: ' + string(stringno+1) + '/' + string(scr_textbox_count(self)));
+            other.row = row;
+        }
     }
     if (verbose) {
         var doortime = scr_doortimer();
@@ -555,7 +556,7 @@ var alpha = draw_get_alpha();
 
 draw_set_color(c_black);
 draw_set_alpha(BG_OPACITY);
-draw_rectangle(xx-3, yy+yoff+2, x+string_width(argument0)+6, yy+16, false);
+draw_rectangle(xx-3, yy+yoff+2, xx+string_width(argument0)+2, yy+16, false);
 
 draw_set_color(color);
 draw_set_alpha(alpha);
@@ -680,8 +681,9 @@ if (room_exists(idx)) {
 }
 
 MakeScript("scr_textbox_count", @"
-for (var i = 0; i < 99; i++) {
-    var s = global.msg[i];
+var len = array_length_1d(argument0.mystring);
+for (var i = 0; i < len; i++) {
+    var s = argument0.mystring[i];
     if (string_pos('%%', s) || string_pos('\C', s)) {
         return i + 1;
     }
@@ -747,6 +749,21 @@ if (global._hitbox) {
     // The numbers in parens are not important, they could be -inf and inf.
     draw_line(160, (188), 160, (240));
     draw_line((0), 188, (160), 188);
+}
+");
+
+// Show Alphys' "press 3rd switch" call trigger in room_fire10
+GetObject("obj_triswitchevent").Visible = true;
+ReplaceCode(EventHandler("obj_triswitchevent", EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_set_alpha(1);
+    draw_set_color(c_aqua);
+
+    // Coords taken from gml_Object_obj_triswitchevent_Step_0 and adjusted for bbox
+    // Unfortunately, mainchara's bbox is wider than the trigger,
+    // so the (irrelevant) left side is kinda wrong.
+    // (as a rectangle, this would theoretically need negative width)
+    draw_line(389, (-1), 389, 108, true);
 }
 ");
 

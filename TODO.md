@@ -11,7 +11,6 @@ Feel free to open an Issue/PR to add stuff to this list.
 ## Hitboxes
 * Show in battle
 * Missing event triggers
-* Differentiate NPCs (solid) and readables
 
 ## Toggle Binds
 * Encounters
