@@ -28,6 +28,7 @@ Feel free to open an Issue/PR to add stuff to this list.
 * Add my savestates mod
 * Modify stats
 * Free camera
+* Rebind vanilla keys (e.g. WASD)
 
 ## Fixes
 * Fix runtime error for 1.00

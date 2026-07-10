@@ -441,12 +441,7 @@ foreach (var obj in Data.GameObjects)
     if (IsParent(obj, "obj_solidparent"))
     {
         obj.Solid = false;
-        bool visible = IsVisible(obj);
-        if (!visible)
-        {
-            obj.Visible = true;
-            SuppressRendering(obj);
-        }
+        obj.Visible = true;
     }
 
     if (obj.Name.Content.StartsWith("obj_marker"))
@@ -463,7 +458,8 @@ if (global._hitbox) {
     // TODO: fix noclip for these fuckass objects
     //if (obj.Solid) Console.WriteLine($"{obj} still solid, parent is {obj.ParentId}");
 
-    // This fixes invisibility issues because obj_solidsmall has an empty Draw event.
+    // This fixes invisibility issues because obj_solidsmall 
+    // will be patched to have an empty Draw event.
     if (obj.ParentId == GetObject("obj_solidsmall"))
     {
         obj.ParentId = GetObject("obj_solidparent");
@@ -471,6 +467,13 @@ if (global._hitbox) {
 }
 
 ReplaceCode(EventHandler("obj_interactable", EventSubtypeDraw.DrawEnd), @"
+if (global._hitbox) {
+    draw_set_color(c_green);
+    draw_rectangle(bbox_left, bbox_top, bbox_right, bbox_bottom, true);
+}
+");
+
+ReplaceCode(EventHandler("obj_solidnpcparent", EventSubtypeDraw.DrawEnd), @"
 if (global._hitbox) {
     draw_set_color(c_lime);
     draw_rectangle(bbox_left, bbox_top, bbox_right, bbox_bottom, true);
@@ -485,6 +488,15 @@ if (global._hitbox) {
 ");
 SuppressRendering("obj_doorparent");
 
+ReplaceCode(EventHandler("obj_solidparent", EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_set_color(c_blue);
+    draw_set_alpha(0.5);
+    draw_rectangle(bbox_left, bbox_top, bbox_right, bbox_bottom, false);
+    draw_set_alpha(1);
+}
+");
+
 // TODO: are these still neeeded?
 ShowEvent("obj_bouncetileparent", true);
 GetObject("obj_holedown2").Visible = true;
@@ -495,20 +507,6 @@ GetObject("obj_inwaterspot").Visible = false;
 ShowEvent("obj_teleigloo", true);
 PrependCode(EventHandler("obj_dogetrigger1", EventSubtypeDraw.Draw), "if (sprite_index == spr_event) exit;");
 PrependCode(EventHandler("obj_dogringbell", EventSubtypeDraw.Draw), "if (sprite_index == spr_event) exit;");
-
-// TODO: this unforunately draws on top of the other overlays.
-// I don't know how to prevent this:
-// Previous draw stages will hide this overlay because normal objects get drawn over it.
-// Other draw events will use the screen coordinate context.
-// The worst about GameMaker is probably event order ngl.
-ReplaceCode(EventHandler("obj_solidparent", EventSubtypeDraw.DrawEnd), @"
-if (global._hitbox) {
-    draw_set_color(c_blue);
-    draw_set_alpha(0.5);
-    draw_rectangle(bbox_left, bbox_top, bbox_right, bbox_bottom, false);
-    draw_set_alpha(1);
-}
-");
 
 string[] slopes = ["obj_sul", "obj_sur", "obj_sdl", "obj_sdr"];
 foreach (var objName in slopes)
