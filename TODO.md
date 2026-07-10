@@ -9,7 +9,6 @@ Feel free to open an Issue/PR to add stuff to this list.
 * Show remaining time of turn
 
 ## Hitboxes
-* Show markers
 * Show in battle
 * Missing event triggers
 * Differentiate NPCs (solid) and readables

@@ -449,6 +449,16 @@ foreach (var obj in Data.GameObjects)
         }
     }
 
+    if (obj.Name.Content.StartsWith("obj_marker"))
+    {
+        obj.Visible = true;
+        ReplaceCode(EventHandler(obj, EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_set_color(c_maroon);
+    draw_rectangle(bbox_left, bbox_top+19, bbox_left+19, bbox_top+29, true);
+}
+        ");
+    }
 
     // TODO: fix noclip for these fuckass objects
     //if (obj.Solid) Console.WriteLine($"{obj} still solid, parent is {obj.ParentId}");
@@ -756,6 +766,7 @@ FindReplaceCode(EventHandler("obj_convenientlamp", EventSubtypeStep.BeginStep), 
 // Introduce parent obj_solidparent and get rid of `solid = 1`
 GetObject("obj_torieltrigger2").ParentId = GetObject("obj_solidparent");
 GetObject("obj_torieltrigger2").Solid = false;
+AppendCode(EventHandler("obj_torieltrigger2", EventType.Create, 0u), "phase = 0;");
 
 // TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
 
