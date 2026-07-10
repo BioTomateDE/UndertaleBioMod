@@ -87,7 +87,6 @@ RegisterHotkey(PREVIOUS_ROOM_KEY, "room_goto_previous(); global.entrance = 0; gl
 RegisterHotkey(NEXT_ROOM_KEY, "room_goto_next(); global.entrance = 0; global.interact = 0;");
 ImplRoomSwitcher();
 
-// mashing in battles implemented below somewhje
 RegisterHotkey(MASH_TEXT_KEY, @"
 global._mashing = true;
 with (OBJ_WRITER) {
@@ -450,6 +449,10 @@ foreach (var obj in Data.GameObjects)
         }
     }
 
+
+    // TODO: fix noclip for these fuckass objects
+    //if (obj.Solid) Console.WriteLine($"{obj} still solid, parent is {obj.ParentId}");
+
     // This fixes invisibility issues because obj_solidsmall has an empty Draw event.
     if (obj.ParentId == GetObject("obj_solidsmall"))
     {
@@ -749,6 +752,10 @@ FindReplaceCode(EventHandler("obj_superdrophole", EventType.Alarm, 3u), "solid =
 // Change parent from obj_readable to obj_readablesolid but get rid of `solid = 1`
 GetObject("obj_convenientlamp").ParentId = GetObject("obj_readablesolid");
 FindReplaceCode(EventHandler("obj_convenientlamp", EventSubtypeStep.BeginStep), "solid = 1;", "");
+
+// Introduce parent obj_solidparent and get rid of `solid = 1`
+GetObject("obj_torieltrigger2").ParentId = GetObject("obj_solidparent");
+GetObject("obj_torieltrigger2").Solid = false;
 
 // TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
 
