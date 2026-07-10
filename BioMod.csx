@@ -74,7 +74,7 @@ Dictionary<string, (int, UndertaleGameObject)> ObjectMap = new();
 MapObjects();
 
 if (CheckAlreadyPatched()) return;
-UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN_BECAUSE_ERRORS_OCCURRED");
+UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN");
 
 RegisterHotkey(SHOW_HITBOXES_KEY, "global._hitbox = !global._hitbox;", true);
 RegisterHotkey(NOCLIP_KEY, "global._noclip = !global._noclip;", true);
@@ -764,20 +764,27 @@ watermark.Content = WATERMARK;
 ScriptMessage($"Successfully patched BioMod v{MOD_VERSION}!\nPress F1 for help.");
 
 ////////////////////////////////////////////////// HELPERS
+class Err : Exception
+{
+    const string END = "\n\n(This data file is now probably broken, please reload.)\n\nYou can ignore this garbage:";
+    public Err() { }
+    public Err(string message) : base("\n" + message + END) { }
+    public Err(string message, Exception inner) : base("\n" + message + END, inner) { }
+}
 
 void MakeMacro(string name, string value, bool onlyAllowIdentifier = false)
 {
     if (!IsValidIdentifier(name))
-        throw new Exception($"Invalid name {Escape(name)} for macro with value {Escape(value)}\n\n\n");
+        throw new Err($"Invalid name {Escape(name)} for macro with value {Escape(value)}");
     if (onlyAllowIdentifier && !IsValidIdentifier(value))
-        throw new Exception($"Invalid macro value identifier {Escape(value)} for macro {Escape(name)}\n\n\n");
+        throw new Err($"Invalid macro value identifier {Escape(value)} for macro {Escape(name)}");
     Macros.Add((name, value));
 }
 
 void MakeMacro<T>(string name, T number, T min, T max) where T : System.Numerics.INumber<T>
 {
     if (number < min || number > max)
-        throw new Exception($"Constant {name} is {number} which is not in the allowed range {min} - {max}\n\n\n");
+        throw new Err($"Constant {name} is {number} which is not in the allowed range {min} - {max}");
     MakeMacro(name, number.ToString());
 }
 
@@ -850,7 +857,7 @@ UndertaleGameObject GetObject(string name)
         var (idx, obj) = pair;
         return obj;
     }
-    throw new Exception($"Could not find game object with name {Escape(name)}, are you sure this is Undertale?\n\n\n");
+    throw new Err($"Could not find game object with name {Escape(name)}, are you sure this is Undertale?");
 }
 
 int GetObjectIndex(string name)
@@ -860,7 +867,7 @@ int GetObjectIndex(string name)
         var (idx, obj) = pair;
         return idx;
     }
-    throw new Exception($"Could not find game object with name {Escape(name)}, are you sure this is Undertale?\n\n\n");
+    throw new Err($"Could not find game object with name {Escape(name)}, are you sure this is Undertale?");
 }
 
 UndertaleCode EventHandler(UndertaleGameObject obj, EventType type, uint subtype) => obj.EventHandlerFor(type, subtype, Data);
@@ -878,7 +885,7 @@ UndertaleCode EventHandler(string obj, EventSubtypeStep stepType) => EventHandle
 UndertaleCode EventHandler(UndertaleGameObject obj, EventType type, EventSubtypeKey key)
 {
     if (type is not (EventType.Keyboard or EventType.KeyPress or EventType.KeyRelease))
-        throw new Exception($"Invalid event type {type} for keyboard handler\n\n\n");
+        throw new Err($"Invalid event type {type} for keyboard handler");
     return EventHandler(obj, type, (uint)key);
 }
 UndertaleCode EventHandler(string obj, EventType type, EventSubtypeKey key) => EventHandler(GetObject(obj), type, key);
@@ -927,7 +934,7 @@ void MakeScript(string scriptName, string sourceCode)
 {
     if (!IsValidIdentifier(scriptName))
     {
-        throw new Exception($"Invalid script name {Escape(scriptName)}\n\n\n");
+        throw new Err($"Invalid script name {Escape(scriptName)}");
     }
     importGroup.QueueReplace("gml_Script_" + scriptName, ApplyMacros(sourceCode));
 }
@@ -1073,6 +1080,7 @@ bool IsParent(string obj, string parentMaybe) => IsParent(GetObject(obj), GetObj
 
 bool CheckAlreadyPatched()
 {
+    const string LOADVANILLA = "Please load a vanilla data file and try again.";
     foreach (UndertaleString utstring in Data.Strings)
     {
         string str = utstring?.Content ?? "";
@@ -1082,10 +1090,14 @@ bool CheckAlreadyPatched()
             {
                 ScriptMessage("Already patched!");
             }
+            else if (str.EndsWith("_BROKEN"))
+            {
+                ScriptError("This data file is broken because BioMod previously crashed while patching. " + LOADVANILLA);
+            }
             else
             {
                 string v = str.Substring(MAGIC.Length);
-                ScriptError($"Found existing BioMod v{v}. This script patches BioMod v{MOD_VERSION}. Please load a vanilla data file and try again.");
+                ScriptError($"Found existing BioMod v{v}. This script patches BioMod v{MOD_VERSION}. " + LOADVANILLA);
             }
             return true;
         }
