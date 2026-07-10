@@ -441,6 +441,9 @@ foreach (var obj in Data.GameObjects)
     if (IsParent(obj, "obj_solidparent"))
     {
         obj.Solid = false;
+        if (obj.Visible) {
+            ReplaceCode(EventHandler(obj, EventSubtypeDraw.Draw), "draw_self(); event_inherited();");
+        }
         obj.Visible = true;
     }
 
@@ -458,7 +461,7 @@ if (global._hitbox) {
     // TODO: fix noclip for these fuckass objects
     //if (obj.Solid) Console.WriteLine($"{obj} still solid, parent is {obj.ParentId}");
 
-    // This fixes invisibility issues because obj_solidsmall 
+    // This fixes invisibility issues because obj_solidsmall
     // will be patched to have an empty Draw event.
     if (obj.ParentId == GetObject("obj_solidsmall"))
     {
