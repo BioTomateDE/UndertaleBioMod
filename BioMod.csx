@@ -14,6 +14,11 @@ int RAINBOW_SPEED = 30;         // 1 - 200
 int SPEEDHACK_SLOW_FPS = 10;    // 1 - 30
 int SPEEDHACK_FAST_FPS = 150;   // 30 - 1000
 
+// Gets rid of some crashes and shows more useful information when using the mod.
+// (This does not modify any behavior for playing the game normally.)
+// Disabling this may show confusing/useless information that more closely mimics what the vanilla game actually does.
+bool FIX = true;
+
 // These keys can be any EventSubtypeKey.
 // https://github.com/UnderminersTeam/UndertaleModTool/blob/stable-0.9/UndertaleModLib/Models/UndertaleGameObject.cs?plain=1#L793-L1165
 var HELP_KEY = vk_f1;           // Shows keybinds and what they do
@@ -46,12 +51,13 @@ CodeImportGroup importGroup = new(Data)
 
 List<(string, string)> Macros = new();
 MakeMacro("MOD_VERSION", '"' + MOD_VERSION + '"');
+MakeMacro("FIX", FIX);
 
 MakeMacro("BG_OPACITY", BG_OPACITY, 0.0, 1.0);
 
 MakeMacro("UI_SCALE", UI_SCALE, 0.4, 2.0);
-MakeMacro("SCREEN_WIDTH", $"(view_wport[0] / {UI_SCALE})");
-MakeMacro("SCREEN_HEIGHT", $"(view_hport[0] / {UI_SCALE})");
+MakeMacro("SCREEN_WIDTH", 640d / UI_SCALE);
+MakeMacro("SCREEN_HEIGHT", 480d / UI_SCALE);
 
 MakeMacro("RAINBOWNESS", RAINBOWNESS, 0, 255);
 MakeMacro("RAINBOW_SPEED", RAINBOW_SPEED, 1, 200);
@@ -87,8 +93,20 @@ global.interact = 0;
 global.flag[17] = 0;
 global._movefree = true;
 ", false, true);
-RegisterHotkey(PREVIOUS_ROOM_KEY, "room_goto_previous(); global.entrance = 0; global.interact = 0;");
-RegisterHotkey(NEXT_ROOM_KEY, "room_goto_next(); global.entrance = 0; global.interact = 0;");
+RegisterHotkey(PREVIOUS_ROOM_KEY, @"
+room_goto_previous();
+global.interact = 0;
+if (FIX) {
+    global.entrance = 0;
+}
+");
+RegisterHotkey(NEXT_ROOM_KEY, @"
+room_goto_next();
+global.interact = 0;
+if (FIX) {
+    global.entrance = 0;
+}
+");
 
 RegisterHotkey(MASH_TEXT_KEY, @"
 global._mashing = true;
@@ -238,7 +256,7 @@ if (scr_battlegroup_name(bgroup) != 'Unknown') {
 }
 ");
 
-ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUI), @"
+ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
 draw_set_halign(fa_left);
 draw_set_font(fnt_maintext);
 
@@ -257,7 +275,7 @@ with (obj_roomswitcher) {
     } else {
         draw_set_color(c_gray);
         draw_text(xx, yy, '> ' + scr_complete_roomname(text));
-    
+
         draw_set_color(scr_parse_room(text) ? c_yellow : c_white);
         draw_text(xx, yy, '> ' + text);
     }
@@ -269,8 +287,8 @@ with (obj_battleselector) {
     scr_draw_overlay('Battle Selector');
 
     draw_set_color(c_gray);
-    draw_text(x1, y2-55, 'Press Enter to confirm / close');
-    // draw_text(x1, y2-40, 'Press Tab to autocomplete');
+    draw_text(x1, y2-40, 'Press Enter to confirm / close');
+    draw_text(x1, y2-25, 'Press Tab to autocomplete');
     draw_text(x1, y2-10, 'You can use Ctrl+Backspace, Ctrl+Left and Ctrl+Right');
 
     if (text == '') {
@@ -279,7 +297,7 @@ with (obj_battleselector) {
     } else {
         // draw_set_color(c_gray);
         // draw_text(xx, yy, '> ' + scr_complete_battlegroup(text));
-    
+
         //draw_set_color(scr_parse_battlegroup(text) ? c_yellow : c_white);
         draw_set_color(c_white);
         draw_text(xx, yy, '> ' + text);
@@ -337,7 +355,7 @@ global._mashing = false;
 global._movefree = false;
 
 // Draw Misc Info in the top-left corner
-if (!global._info) exit;
+if (global._info) {
 var verbose = global._info == 2;
 draw_set_color(c_white);
 row = 0;
@@ -435,6 +453,10 @@ if (room == room_battle) {
         }
     }
 }
+}
+
+// fix for soundtest gui
+draw_set_font(fnt_main);
 ");
 
 ReplaceCode(EventHandler("obj_mainchara", EventSubtypeDraw.DrawEnd), @"
@@ -598,7 +620,10 @@ foreach (var objName in slopes)
     ReplaceCode(EventHandler(obj, EventSubtypeStep.Step), "visible = global._hitbox");
 }
 
-FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
+if (FIX)
+{
+    FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
+}
 
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
 display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -958,7 +983,10 @@ return true;
 
 GetObject("obj_time").Visible = true;
 
-AppendCode(EventHandler("obj_battlecontroller", EventSubtypeOther.RoomEnd), "global.battlegroup = 0;");
+if (FIX)
+{
+    AppendCode(EventHandler("obj_battlecontroller", EventSubtypeOther.RoomEnd), "global.battlegroup = 0;");
+}
 
 AppendCode(Data.Scripts.ByName("scr_steps").Code, @"
 if (alldead == 0) {
@@ -1007,26 +1035,29 @@ if (global._hitbox) {
 
 
 // Fixes for noclip sometimes not working
-FindReplaceCode(EventHandler("obj_redswitch_1", EventType.Alarm, 3u), "obj_solidparent.solid = 1;", "");
-FindReplaceCode(EventHandler("obj_torhandhold1", EventSubtypeStep.EndStep), "obj_spiketile2.solid = 1;", "");
-FindReplaceCode(EventHandler("obj_holedown", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
-FindReplaceCode(EventHandler("obj_asrielbed", EventSubtypeStep.BeginStep), "obj_solidsmall.solid = 1;", "");
-FindReplaceCode(EventHandler("obj_holeup", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
-FindReplaceCode(EventHandler("obj_holeup2", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
-FindReplaceCode(EventHandler("obj_superdrophole", EventType.Alarm, 3u), "solid = 1;", "");
+if (FIX)
+{
+    FindReplaceCode(EventHandler("obj_redswitch_1", EventType.Alarm, 3u), "obj_solidparent.solid = 1;", "");
+    FindReplaceCode(EventHandler("obj_torhandhold1", EventSubtypeStep.EndStep), "obj_spiketile2.solid = 1;", "");
+    FindReplaceCode(EventHandler("obj_holedown", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+    FindReplaceCode(EventHandler("obj_asrielbed", EventSubtypeStep.BeginStep), "obj_solidsmall.solid = 1;", "");
+    FindReplaceCode(EventHandler("obj_holeup", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+    FindReplaceCode(EventHandler("obj_holeup2", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+    FindReplaceCode(EventHandler("obj_superdrophole", EventType.Alarm, 3u), "solid = 1;", "");
 
-// Change parent from obj_readable to obj_readablesolid but get rid of `solid = 1`
-GetObject("obj_convenientlamp").ParentId = GetObject("obj_readablesolid");
-FindReplaceCode(EventHandler("obj_convenientlamp", EventSubtypeStep.BeginStep), "solid = 1;", "");
+    // Change parent from obj_readable to obj_readablesolid but get rid of `solid = 1`
+    GetObject("obj_convenientlamp").ParentId = GetObject("obj_readablesolid");
+    FindReplaceCode(EventHandler("obj_convenientlamp", EventSubtypeStep.BeginStep), "solid = 1;", "");
 
-// Introduce parent obj_solidparent and get rid of `solid = 1`
-GetObject("obj_torieltrigger2").ParentId = GetObject("obj_solidparent");
-GetObject("obj_torieltrigger2").Solid = false;
-AppendCode(EventHandler("obj_torieltrigger2", EventType.Create, 0u), "phase = 0;");
+    // Introduce parent obj_solidparent and get rid of `solid = 1`
+    GetObject("obj_torieltrigger2").ParentId = GetObject("obj_solidparent");
+    GetObject("obj_torieltrigger2").Solid = false;
+    AppendCode(EventHandler("obj_torieltrigger2", EventType.Create, 0u), "phase = 0;");
 
-// TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
+    // TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
+}
 
-importGroup.Import();
+    importGroup.Import();
 watermark.Content = WATERMARK;
 ScriptMessage($"Successfully patched BioMod v{MOD_VERSION}!\nPress F1 for help.");
 
@@ -1048,11 +1079,20 @@ void MakeMacro(string name, string value, bool onlyAllowIdentifier = false)
     Macros.Add((name, value));
 }
 
+void MakeMacro(string name, bool boolean)
+{
+    MakeMacro(name, boolean ? "true" : "false");
+}
+
+void MakeMacro<T>(string name, T number) where T : System.Numerics.INumber<T>
+{
+    MakeMacro(name, number.ToString());
+}
 void MakeMacro<T>(string name, T number, T min, T max) where T : System.Numerics.INumber<T>
 {
     if (number < min || number > max)
         throw new Err($"Constant {name} is {number} which is not in the allowed range {min} - {max}");
-    MakeMacro(name, number.ToString());
+    MakeMacro(name, number);
 }
 
 void MakeKeyMacro(string name, EventSubtypeKey key)
