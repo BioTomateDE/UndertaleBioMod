@@ -5,7 +5,7 @@ Feel free to open an Issue/PR to add stuff to this list.
 ## Infos
 * Ballet Shoes / Torn Notebook / Burnt Pan: Show damage as array or something
 * Show situational numbers like cutscene timers (alarm)
-* Show remaining time of turn
+* Show remaining time of turn (global.turntimer?)
 
 ## Hitboxes
 * Show in battle
@@ -32,3 +32,5 @@ Feel free to open an Issue/PR to add stuff to this list.
 * Fix runtime error for 1.00
 * Polish the battlegroup selector
 * Allow BATTLECANCEL to skip intro and gameover
+* global.inv does not always seem to be the max invincibility
+* text masher in battle doesnt (always) press X

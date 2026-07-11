@@ -143,6 +143,11 @@ with (obj_tempblack) {
 with (obj_transheart) {
     instance_destroy();
 }
+
+// fixes SPARE button after fighting asgore
+if (FIX) {
+    global.mercy = 0;
+}
 ", true);
 
 RegisterHotkey(BATTLE_SELECTOR_KEY, "instance_create(0, 0, obj_battleselector);");
@@ -362,7 +367,8 @@ row = 0;
 if (room == room_battle) {
     draw_text_row('Battle Group: ' + string(global.battlegroup) + ' (' + scr_battlegroup_name(global.battlegroup) + ')');
 
-    if (global.battlegroup != 100) { // fixes asgore intro
+    // in the asgore intro, the monster isnt really initialized yet
+    if (!FIX || global.battlegroup != 100) {
     for (var i = 0; i < 3; i++) {
         if (!global.monster[i]) continue;
         if (verbose) {
@@ -406,7 +412,7 @@ if (room == room_battle) {
         var avgdmg = round((mindmg + maxdmg) / 2);
         draw_text_row('Attack Damage: ' + string(mindmg) + '-' + string(maxdmg) + ' (Avg: ' + string(avgdmg) + ')');
     }
-    if (verbose && global.mnfight) {
+    if (verbose && (FIX || global.mnfight)) {
         draw_text_row('X: ' + string(obj_heart.x) + ', Y: ' + string(obj_heart.y));
     }
 } else {
@@ -439,7 +445,7 @@ if (room == room_battle) {
         draw_text_row('Menu Disabled');
     }
     // this prevents dozens of rows for the Three Switch Room Skip lol
-    if (!instance_exists(obj_triswitchevent)) {
+    if (!FIX || !instance_exists(obj_triswitchevent)) {
         with (OBJ_WRITER) {
             row = other.row;
             draw_text_row('Textbox: ' + string(stringno+1) + '/' + string(scr_textbox_count(self)));
@@ -623,6 +629,8 @@ foreach (var objName in slopes)
 if (FIX)
 {
     FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
+    AppendCode(EventHandler("obj_asgoreb", EventType.Create, 0u), "global.battlegroup = 101;");
+    AppendCode(EventHandler("obj_mettatonex", EventType.Create, 0u), "global.battlegroup = 81;");
 }
 
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
@@ -1406,8 +1414,10 @@ bool CheckAlreadyPatched()
 
 // TODO: fix mettaton and asgore in code to display them correctly
 string BattlegroupCode => @"
+unused = 0;
+hardmode = 0;
 switch (argument0) {
-    case 1: return 'Test Monster [UNUSED]';
+    case 1: unused = 1; return 'Test Monster';
     case 2: return 'Dummy';
     case 3: return 'Fake Froggit';
     case 4: return 'Froggit';
@@ -1416,18 +1426,18 @@ switch (argument0) {
     case 7: return 'Moldsmal';
     case 8: return 'Moldsmal & Moldsmal & Moldsmal';
     case 9: return 'Froggit & Froggit';
-    case 10: return 'Moldsmal & Moldsmal';
+    case 10: return 'Moldsmal & Moldsmal - Ruins';
     case 11: return 'Moldsmal & Migosp';
     case 12: return 'Migosp & Vegetoid';
     case 13: return 'Loox';
-    case 14: return 'Loox & Vegetoid [UNUSED]';
+    case 14: unused = 1; return 'Loox & Vegetoid';
     case 15: return 'Loox & Vegetoid & Migosp';
     case 16: return 'Vegetoid & Vegetoid';
     case 17: return 'Loox & Loox';
     case 18: return 'Vegetoid';
     case 19: return 'Too much';
     case 20: return 'Napstablook';
-    case 21: return 'Loox [UNUSED]';
+    case 21: unused = 1; return 'Loox';
     case 22: return 'Toriel';
     case 23: return 'Doggo';
     case 24: return 'Lesser Dog';
@@ -1436,10 +1446,10 @@ switch (argument0) {
     case 27: return 'Papyrus';
     case 28: return 'Gyftrot';
     case 30: return 'Snowdrake';
-    case 31: return 'Chilldrake & Chilldrake [UNUSED]';
+    case 31: unused = 1; return 'Chilldrake & Chilldrake';
     case 32: return 'Icecap';
-    case 33: return 'Icecap & Snowdrake [UNUSED]';
-    case 34: return 'Jerry [UNUSED]';
+    case 33: unused = 1; return 'Icecap & Snowdrake';
+    case 34: unused = 1; return 'Jerry';
     case 35: return 'Icecap & Jerry';
     case 36: return 'Icecap & Jerry & Snowdrake';
     case 40: return 'Aaron';
@@ -1455,7 +1465,7 @@ switch (argument0) {
     case 50: return 'Tsunderplane';
     case 51: return 'Vulkin';
     case 52: return 'Pyrope';
-    case 53: return 'Moldsmal & Moldsmal';
+    case 53: return 'Moldsmal & Moldsmal - Waterfall';
     case 54: return 'Woshua & Aaron';
     case 55: return 'Moldbygg & Woshua';
     case 56: return 'Muffet';
@@ -1465,23 +1475,23 @@ switch (argument0) {
     case 60: return 'Knight Knight';
     case 61: return 'Final Froggit';
     case 62: return 'Astigmatism';
-    case 63: return 'Whimsalot [UNUSED]';
+    case 63: unused = 1; return 'Whimsalot';
     case 64: return 'Whimsalot & Final Froggit';
     case 65: return 'Whimsalot & Astigmatism';
     case 66: return 'Final Froggit & Astigmatism';
     case 67: return 'Final Froggit & Astigmatism & Whimsalot';
     case 68: return 'Knight Knight & Madjick';
-    case 69: return 'Bomb [UNUSED]';
+    case 69: unused = 1; return 'Bomb';
     case 70: return 'Dog Bomb';
     case 71: return 'Extremely agile glass of water';
     case 72: return 'Script Bomb';
     case 73: return 'Basketball Bomb';
     case 74: return 'Present Bomb';
     case 75: return 'Game Bomb';
-    case 76: return 'Royal Guard 03 & Royal Guard 04 [UNUSED]';
+    case 76: unused = 1; return 'Royal Guard 03 & Royal Guard 04';
     case 77: return 'Tsunderplane & Vulkin';
     case 78: return 'Pyrope & Pyrope';
-    case 79: return 'Vulkin & Vulkin [UNUSED]';
+    case 79: unused = 1; return 'Vulkin & Vulkin';
     case 80: return 'Mettaton - CORE';
     case 81: return 'Mettaton EX';
     case 82: return 'Lemon Bread';
@@ -1498,23 +1508,23 @@ switch (argument0) {
     case 93: return 'Glad Dummy';
     case 94: return 'Mettaton NEO';
     case 95: return 'Sans';
-    case 100: return 'Asgore'; // technically the intro
-    case 101: return 'Asgore [UNUSED]';
-    case 120: return 'Final Froggit & Astigmatism [HARDMODE]';
-    case 121: return 'Final Froggit & Migospel [HARDMODE]';
-    case 122: return 'Parsnik [HARDMODE]';
-    case 123: return 'Moldessa & Moldessa [HARDMODE]';
-    case 124: return 'Moldessa & Moldessa & Moldessa [HARDMODE]';
-    case 125: return 'Final Froggit & Whimsalot [HARDMODE]';
-    case 126: return 'Final Froggit [HARDMODE]';
-    case 127: return 'Whimsalot & Parsnik [HARDMODE, UNUSED]';
-    case 128: return 'Moldessa & Migospel [HARDMODE]';
-    case 129: return 'Parsnik & Migospel [HARDMODE]';
-    case 130: return 'Parsnik & Parsnik [HARDMODE]';
-    case 131: return 'Parsnik & Astigmatism [HARDMODE, UNUSED]';
-    case 132: return 'Astigmatism & Astigmatism [HARDMODE]';
-    case 133: return 'Astigmatism & Migospel & Moldessa [HARDMODE, UNUSED]';
-    case 134: return 'Whimsalot & Parsnik & Moldessa [HARDMODE, UNUSED]';
+    case 100: return 'Asgore - Intro';
+    case 101: unused = !FIX; return 'Asgore';
+    case 120: hardmode = 1; return 'Final Froggit & Astigmatism';
+    case 121: hardmode = 1; return 'Final Froggit & Migospel';
+    case 122: hardmode = 1; return 'Parsnik';
+    case 123: hardmode = 1; return 'Moldessa & Moldessa';
+    case 124: hardmode = 1; return 'Moldessa & Moldessa & Moldessa';
+    case 125: hardmode = 1; return 'Final Froggit & Whimsalot';
+    case 126: hardmode = 1; return 'Final Froggit';
+    case 127: hardmode = 1; unused = 1; return 'Whimsalot & Parsnik';
+    case 128: hardmode = 1; return 'Moldessa & Migospel';
+    case 129: hardmode = 1; return 'Parsnik & Migospel';
+    case 130: hardmode = 1; return 'Parsnik & Parsnik';
+    case 131: hardmode = 1; unused = 1; return 'Parsnik & Astigmatism';
+    case 132: hardmode = 1; return 'Astigmatism & Astigmatism';
+    case 133: hardmode = 1; unused = 1; return 'Astigmatism & Migospel & Moldessa';
+    case 134: hardmode = 1; unused = 1; return 'Whimsalot & Parsnik & Moldessa';
     case 135: return 'Glyde';
     case 140: return 'So Sorry';
     case 255: return 'Asriel - God of Hyperdeath';
