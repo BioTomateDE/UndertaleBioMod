@@ -30,4 +30,3 @@ Feel free to open an Issue/PR to add stuff to this list.
 
 ## Fixes
 * Fix runtime error for 1.00
-* Fix noclip for blue soul

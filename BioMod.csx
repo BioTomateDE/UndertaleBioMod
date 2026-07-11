@@ -566,12 +566,6 @@ foreach (var objName in slopes)
     ReplaceCode(EventHandler(obj, EventSubtypeStep.Step), "visible = global._hitbox");
 }
 
-foreach (var ev in GetObject("obj_heart").Events[(int)EventType.Collision])
-{
-    // TODO: does this mess up sans shaker
-    PrependCode(ev.Actions[0].CodeId, "if (global._noclip) exit;");
-}
-
 FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
 
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
@@ -1093,6 +1087,8 @@ UndertaleCode EventHandler(string obj, EventSubtypeOther otherType) => EventHand
 UndertaleCode EventHandler(UndertaleGameObject obj, EventSubtypeStep stepType) => EventHandler(obj, EventType.Step, (uint)stepType);
 UndertaleCode EventHandler(string obj, EventSubtypeStep stepType) => EventHandler(GetObject(obj), stepType);
 
+UndertaleCode CollisionHandler(string self, string other) => EventHandler(self, EventType.Collision, (uint)GetObjectIndex(other));
+
 UndertaleCode EventHandler(UndertaleGameObject obj, EventType type, EventSubtypeKey key)
 {
     if (type is not (EventType.Keyboard or EventType.KeyPress or EventType.KeyRelease))
@@ -1161,6 +1157,11 @@ void ImplNoclip()
             FindReplaceCode(action.CodeId, "global.phasing == 0", "!(global.phasing || global._noclip)");
         }
     }
+        
+    FindReplaceCode(CollisionHandler("obj_heart", "obj_dborder"), "y = other.y - sprite_height;", "if (movement == 2 || !global._noclip) {y = other.y - sprite_height;}");
+    FindReplaceCode(CollisionHandler("obj_heart", "obj_rborder"), "x = other.x - sprite_width;", "if (!global._noclip) {x = other.x - sprite_width;}");
+    FindReplaceCode(CollisionHandler("obj_heart", "obj_uborder"), "y = other.y + other.sprite_height;", "if (!global._noclip) {y = other.y + other.sprite_height;}");
+    FindReplaceCode(CollisionHandler("obj_heart", "obj_lborder"), "x = other.x + other.sprite_width;", "if (!global._noclip) {x = other.x + other.sprite_width;}");
 }
 
 void ImplRoomSwitcher()
