@@ -33,6 +33,7 @@ It's basically debug mode, but better.
   * The battle group of the current/next battle
   * (In battle) The turn count
   * (In battle) The chance of successfully fleeing
+  * (In battle) The effect of the item you are about to consume
   * (In battle) Attack damage for every frame + RNG variance
 * Room switcher
   * Type a room ID or name

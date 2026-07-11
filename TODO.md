@@ -5,7 +5,6 @@ Feel free to open an Issue/PR to add stuff to this list.
 ## Infos
 * Ballet Shoes / Torn Notebook / Burnt Pan: Show damage as array or something
 * Show situational numbers like cutscene timers (alarm)
-* Show effects (like HP heal amount) of item in battle before using
 * Show remaining time of turn
 
 ## Hitboxes

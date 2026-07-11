@@ -334,6 +334,10 @@ if (room == room_battle) {
         }
         draw_text_row(text);
     }
+    if (global.myfight == 0 && (global.bmenuno == 3 || global.bmenuno == 3.5)) {
+        var itempos = global.bmenucoord[3] + ((global.bmenuno - 3) * 8);
+        draw_text_row('Item Effect: ' + scr_itemstat(global.item[itempos]));
+    }
     if (instance_exists(obj_targetchoice) || instance_exists(obj_targetchoicefist) || instance_exists(obj_shoetargettest)) {
         var mindmg = scr_attackdamage(false);
         var maxdmg = scr_attackdamage(true);
@@ -720,6 +724,141 @@ for (var i = 0; i < len; i++) {
 }
 // hopefully never hit lol
 ");
+
+MakeScript("scr_itemstat", @"
+// Info from gml_Script_scr_itemuseb
+switch (argument0) {
+    case 1: return '+10 HP';  // Monster Candy
+    case 2: return '+15 HP';  // Croquet Roll
+    case 3: // Stick
+        if (instance_exists(obj_dogeparent) || instance_exists(obj_wizard)) {
+            return 'Mercy';
+        }
+        with (obj_ratingsmaster) {
+            return typeuse[7] ? '+1 Rating' : '+700 Rating';
+        }
+        return '---';
+    case 4: return '+10 HP';  // Bandage
+    case 5: return '+1 HP';  // Rock Candy
+    case 6: return '+8 HP';  // Pumpkin Rings
+    case 7: return '+12 HP';  // Spider Donut
+    case 8: return '+5 HP';  // Stoic Onion
+    case 9: return '+16 HP';  // Ghost Fruit
+    case 10: return '+24 HP';  // Spider Cider
+    case 11:  // Butterscotch Pie
+        if (instance_exists(obj_asgoreb)) {
+            return 'Max HP, -1 EnemyDF, -5 EnemyAT';
+        }
+        if (instance_exists(obj_ripoff_toriel)) {
+            return 'Max HP, +3 Mercy';
+        }
+        return 'Max HP';
+    case 12: return '3 DF';  // Faded Ribbon
+    case 13: return '3 AT';  // Toy Knife
+    case 14: return '5 AT';  // Tough Glove
+    case 15: return '7 DF';  // Manly Bandanna
+    case 16: return '+45 HP';  // Snowman Piece
+    case 17: return '+15 HP';  // Nice Cream
+    case 18: return '+28 HP';  // Puppydough Icecream
+    case 19: return '+11 HP';  // Bisicle
+    case 20: return '+11 HP';  // Unisicle
+    case 21: return '+22 HP';  // Cinnamon Bun
+    case 22: return '+2 HP';  // Temmie Flakes
+    case 23: return '+34 HP';  // Abandoned Quiche
+    case 24: return '10 DF';  // Old Tutu
+    case 25: return '7 AT';  // Ballet Shoes
+    case 26:  // Punch Card
+        if (global.weapon == 14) {
+            if (global.at > 28) return '+2 AT';
+            if (global.at > 26) return '+3 AT';
+            if (global.at > 23) return '+4 AT';
+            if (global.at > 18) return '+5 AT';
+            return '+6 AT';
+        }
+        return '---';
+    case 27: return '';  // Annoying Dog
+    case 28: return '+2/10/30/999 HP';  // Dog Salad
+    case 29: case 30: case 31: case 32: case 33: case 34: return 'Bloat Inventory';  // Dog Residue
+    case 35: return '+21 HP';  // Astronaut Food
+    case 36:  // Instant Noodles
+        if (global.inbattle) {
+            if (global.seriousbattle) {
+                return '+90 HP';
+            }
+            return '+4 HP';
+        }
+        return '+15 HP';
+    case 37: return '+18 HP';  // Crab Apple
+    case 38: return '+20 HP';  // Hot Dog
+    case 39: return '+21 HP';  // Hot Cat
+    case 40:  // Glamburger
+        if (instance_exists(obj_ratingsmaster)) {
+            return typeuse[10] ? '+27 HP, +300 Rating' : '+27 HP, +500 Rating';
+        }
+        return '+27 HP';
+    case 41:  // Sea Tea
+        if (global.inbattle && global.sp < 8 && !instance_exists(obj_spiderb)) {
+            return '+10 HP, +1 SP';
+        }
+        return '+10 HP';
+    case 42:  // Starfait
+        if (instance_exists(obj_ratingsmaster)) {
+            return typeuse[9] ? '+14 HP, +200 Rating' : '+14 HP, +300 Rating';
+        }
+        return '+14 HP';
+    case 43:  // Legendary Hero
+        var stat = '+40 HP';
+        if (global.inbattle && global.at < 150) {
+            stat += ', +4 AT';
+        }
+        if (instance_exists(obj_ratingsmaster)) {
+            stat += typeuse[9] ? ', 200 Rating' : ', 300 Rating';
+        }
+        return stat;
+    case 44: return '5 DF';  // Cloudy Glasses
+    case 45: return '2 AT';  // Torn Notebook
+    case 46: return '11 DF';  // Stained Apron
+    case 47: return '10 AT';  // Burnt Pan
+    case 48: return '12 DF, +5 AT';  // Cowboy Hat
+    case 49: return '12 AT';  // Empty Gun
+    case 50: return '15 DF';  // Heart Locket
+    case 51: return '15 AT';  // Worn Dagger
+    case 52: return '99 AT';  // Real Knife
+    case 53: return '99 DF';  // The Locket
+    case 54: return global.hp <= 3 ? 'Max HP' : '-1 HP';  // Bad Memory
+    case 55: return '+17 HP'; // Dream
+    case 56: return '---'; // Undyne's Letter
+    case 57: return '---'; // Undyne Letter EX
+    case 58: return '+13 HP';  // Popato Chisps
+    case 59:  // Junk Food
+        if (instance_exists(obj_ratings_master)) {
+            return '+17 HP, -50 Rating';
+        }
+        return '+17 HP';
+    case 60: return '---';  // Mystery Key
+    case 61:  // Face Steak
+        if (instance_exists(obj_ratings_master)) {
+            return '+60 HP, +700 Rating';
+        }
+        return '+60 HP';
+    case 62:  // Hush Puppy
+        if (instance_exists(obj_endogeny)) {
+            return '+65 HP, Mercy';
+        }
+        return '+65 HP';
+    case 63:  // Snail Pie
+        if (instance_exists(obj_asgoreb)) {
+            return 'Max-1 HP, -1 EnemyDF, -5 EnemyAT';
+        }
+        if (instance_exists(obj_ripoff_toriel)) {
+            return 'Max-1 HP, +3 Mercy';
+        }
+        return 'Max-1 HP';
+    case 64: return '20 DF, +10 AT';  // Temmie Armor
+}
+return 'Unknown';
+");
+
 
 MakeScript("scr_complete_roomname", @"
 for (var i = 0; room_exists(i); i++) {
