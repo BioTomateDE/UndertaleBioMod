@@ -30,3 +30,5 @@ Feel free to open an Issue/PR to add stuff to this list.
 
 ## Fixes
 * Fix runtime error for 1.00
+* Polish the battlegroup selector
+* Allow BATTLECANCEL to skip intro and gameover

@@ -25,10 +25,11 @@ var PREVIOUS_ROOM_KEY = J;      // Jumps to the previous room
 var NEXT_ROOM_KEY = K;          // Jumps to the next room
 var MASH_TEXT_KEY = V;          // Skips dialogue as fast as possible when held down
 var ROOM_SWITCHER_KEY = R;      // Opens an interface where you can type in room IDs/names to teleport to
+var BATTLE_SELECTOR_KEY = B;    // Opens an interface where you can type in battlegroup IDs/names to fight
 var SPEEDHACK_SLOW_KEY = G;     // Decreases the game speed to SPEEDHACK_SLOW_FPS frames per second
 var SPEEDHACK_FAST_KEY = F;     // Increases the game speed to SPEEDHACK_FAST_FPS frames per second
 var GET_PUNCHCARD_KEY = P;      // Gives you a punchcard in the first inventory slot
-var BATTLE_CANCEL_KEY = B;      // Stops an encounter or battle immediately
+var BATTLE_CANCEL_KEY = E;      // Stops an encounter or battle immediately
 // ================================================
 
 const string MOD_VERSION = "0";
@@ -66,6 +67,7 @@ MakeKeyMacro("FREEMOVE", MOVE_FREE_KEY);
 MakeKeyMacro("ROOM_PREV", PREVIOUS_ROOM_KEY);
 MakeKeyMacro("ROOM_NEXT", NEXT_ROOM_KEY);
 MakeKeyMacro("ROOMSWITCHER", ROOM_SWITCHER_KEY);
+MakeKeyMacro("BATTLESELECTOR", BATTLE_SELECTOR_KEY);
 MakeKeyMacro("MASH", MASH_TEXT_KEY);
 MakeKeyMacro("SPEEDHACK_SLOW", SPEEDHACK_SLOW_KEY);
 MakeKeyMacro("SPEEDHACK_FAST", SPEEDHACK_FAST_KEY);
@@ -87,7 +89,6 @@ global._movefree = true;
 ", false, true);
 RegisterHotkey(PREVIOUS_ROOM_KEY, "room_goto_previous(); global.entrance = 0; global.interact = 0;");
 RegisterHotkey(NEXT_ROOM_KEY, "room_goto_next(); global.entrance = 0; global.interact = 0;");
-ImplRoomSwitcher();
 
 RegisterHotkey(MASH_TEXT_KEY, @"
 global._mashing = true;
@@ -125,6 +126,8 @@ with (obj_transheart) {
     instance_destroy();
 }
 ", true);
+
+RegisterHotkey(BATTLE_SELECTOR_KEY, "instance_create(0, 0, obj_battleselector);");
 
 PrependCode(Data.Scripts.ByName("scr_textskip").Code, @"
 if (global._mashing) {
@@ -193,78 +196,107 @@ instance_create(0, 0, obj_roomswitcher);
 global._help = false;
 ", true);
 
-ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
+UndertaleGameObject obj_textinput = ImplTextInput();
+UndertaleGameObject obj_roomswitcher = new()
+{
+    Name = Data.Strings.MakeString("obj_roomswitcher"),
+    Visible = true,
+    Persistent = true,
+    ParentId = obj_textinput,
+};
+Data.GameObjects.Add(obj_roomswitcher);
+ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_enter), @"
+instance_destroy();
+var room_index = scr_parse_room(text);
+if (room_index) {
+    room = room_index;
+}
+");
+ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_tab), @"
+if (text == '') exit;
+var name = scr_complete_roomname(text);
+if (name == '') exit;
+text = name;
+length = string_length(name);
+cursor = length;
+");
+
+UndertaleGameObject obj_battleselector = new()
+{
+    Name = Data.Strings.MakeString("obj_battleselector"),
+    Visible = true,
+    Persistent = true,
+    ParentId = obj_textinput,
+};
+Data.GameObjects.Add(obj_battleselector);
+ReplaceCode(EventHandler(obj_battleselector, EventType.KeyPress, vk_enter), @"
+instance_destroy();
+var bgroup = real(text);
+if (scr_battlegroup_name(bgroup) != 'Unknown') {
+    global.battlegroup = bgroup;
+    instance_create(0, 0, obj_battler);
+}
+");
+
+ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUI), @"
 draw_set_halign(fa_left);
 draw_set_font(fnt_maintext);
 
-var x1 = SCREEN_WIDTH * 0.2;
-var y1 = SCREEN_HEIGHT * 0.25;
-var x2 = SCREEN_WIDTH * 0.8;
-var y2 = SCREEN_HEIGHT * 0.75;
+with (obj_roomswitcher) {
+    scr_draw_overlay('Room Switcher');
 
-if (instance_exists(obj_roomswitcher)) {
-    draw_set_color(c_black);
-    draw_set_alpha(BG_OPACITY);
-    draw_rectangle(x1-10, y1-10, x2+10, y2+10, false);
-    draw_set_alpha(1);
-
-    draw_set_font(fnt_main);
-    draw_text_rainbow(x1, y1-6, 'Room Switcher');
-
-    draw_set_font(fnt_maintext);
     draw_set_color(c_gray);
     draw_text(x1, y2-55, 'Press Enter to confirm / close');
     draw_text(x1, y2-40, 'Press Tab to autocomplete');
     draw_text(x1, y2-25, 'The room_ prefix is not needed');
     draw_text(x1, y2-10, 'You can use Ctrl+Backspace, Ctrl+Left and Ctrl+Right');
 
-    var inputx = x1;
-    var inputy = y1 + 30;
-    var txt = obj_roomswitcher.text;
-    if (txt == '') {
+    if (text == '') {
         draw_set_color(c_silver);
-        txt = 'Enter Room Name or ID';
-    }
-    else if (scr_parse_room(txt)) {
-        draw_set_color(c_yellow);
-    }
-    else {
-        var candidate = scr_complete_roomname(txt);
+        draw_text(xx, yy, '> Enter Room Name or ID');
+    } else {
         draw_set_color(c_gray);
-        draw_text(inputx, inputy, '> ' + candidate);
-        draw_set_color(c_white);
+        draw_text(xx, yy, '> ' + scr_complete_roomname(text));
+    
+        draw_set_color(scr_parse_room(text) ? c_yellow : c_white);
+        draw_text(xx, yy, '> ' + text);
     }
-    draw_text(inputx, inputy, '> ' + txt);
 
-    var cursor_pos = string_width(string_copy(txt, 1, obj_roomswitcher.cursor)) + string_width('> ');
-    draw_set_alpha(0.8);
-    draw_set_color(c_aqua);
-    draw_rectangle(inputx+cursor_pos, inputy+4, inputx+cursor_pos, inputy+2+font_get_size(fnt_maintext), false);
-    draw_set_alpha(1);
+    scr_draw_textinput_cursor();
+}
+
+with (obj_battleselector) {
+    scr_draw_overlay('Battle Selector');
+
+    draw_set_color(c_gray);
+    draw_text(x1, y2-55, 'Press Enter to confirm / close');
+    // draw_text(x1, y2-40, 'Press Tab to autocomplete');
+    draw_text(x1, y2-10, 'You can use Ctrl+Backspace, Ctrl+Left and Ctrl+Right');
+
+    if (text == '') {
+        draw_set_color(c_silver);
+        draw_text(xx, yy, '> Enter Battle Group ID');
+    } else {
+        // draw_set_color(c_gray);
+        // draw_text(xx, yy, '> ' + scr_complete_battlegroup(text));
+    
+        //draw_set_color(scr_parse_battlegroup(text) ? c_yellow : c_white);
+        draw_set_color(c_white);
+        draw_text(xx, yy, '> ' + text);
+    }
+
+    scr_draw_textinput_cursor();
 }
 
 // Draw help
 if (global._help) {
-    draw_set_color(c_black);
-    draw_set_alpha(BG_OPACITY);
-    draw_rectangle(x1-10, y1-10, x2+10, y2+10, false);
-    draw_set_alpha(1);
+    scr_draw_overlay('BioMod');
+
+    draw_text(eks+8, y1+6, 'v' + MOD_VERSION);
 
     if (global._thegame) {
         draw_sprite(spr_skatebone, 0, x2 -  48, y1 - 1);
     }
-
-    draw_set_font(fnt_main);
-    var eks = draw_text_rainbow(x1, y1-6, 'BioMod');
-    draw_set_font(fnt_maintext);
-
-    draw_set_color(c_white);
-    draw_text(eks+8, y1+6, 'v' + MOD_VERSION);
-
-    draw_set_font(fnt_maintext);
-    draw_set_color(c_white);
-    xx = x1;
-    yy = y1 + 28;
 
     scr_draw_help_row(KEY_HELP, 'Shows this help lol');
     scr_draw_help_row(KEY_ROOMSWITCHER, 'Opens an interface to teleport any room');
@@ -316,11 +348,11 @@ if (room == room_battle) {
     for (var i = 0; i < 3; i++) {
         if (!global.monster[i]) continue;
         if (verbose) {
-            var text = 'Enemy ' + string(i+1) + ' (' + global.monstername[i] + '): ' + string(global.monsterhp[i]) + '/' + string(global.monstermaxhp[i]) + ' HP | ' + string(global.monsterdef[i]) + ' DF';
+            var txt = 'Enemy ' + string(i+1) + ' (' + global.monstername[i] + '): ' + string(global.monsterhp[i]) + '/' + string(global.monstermaxhp[i]) + ' HP | ' + string(global.monsterdef[i]) + ' DF';
             if (global.xpreward[i] && global.goldreward[i]) {
-                text += ' | ' + string(global.xpreward[i]) + ' XP | ' + string(global.goldreward[i]) + ' G';
+                txt += ' | ' + string(global.xpreward[i]) + ' XP | ' + string(global.goldreward[i]) + ' G';
             }
-            draw_text_row(text);
+            draw_text_row(txt);
         } else {
             draw_text_row('Enemy ' + string(i+1) + ': ' + string(global.monsterhp[i]) + '/' + string(global.monstermaxhp[i]) + ' HP');
         }
@@ -328,11 +360,11 @@ if (room == room_battle) {
     }
 
     if (global.mercy == 0) {
-        var text = 'Flee Chance: ' + string(scr_fleechance()) + '%';
+        var txt = 'Flee Chance: ' + string(scr_fleechance()) + '%';
         if (verbose && reason != '') {  // set by scr_fleechance
-            text += ' (' + reason + ')';
+            txt += ' (' + reason + ')';
         }
-        draw_text_row(text);
+        draw_text_row(txt);
     }
     draw_text_row('Turn: ' + string(global.turn));
 
@@ -610,7 +642,7 @@ var strlen = string_length(argument2);
 var oldcolor = draw_get_color();
 for (var i = 1; i <= strlen; i++) {
     var char = string_char_at(argument2, i);
-    var hue = (time / global._speedhack * RAINBOW_SPEED) + xx + yy;
+    var hue = (obj_time.time / global._speedhack * RAINBOW_SPEED) + xx + yy;
     draw_set_color(make_color_hsv(hue % 255, RAINBOWNESS, 255));
     draw_text(xx, yy, char);
     xx += string_width(char);
@@ -867,6 +899,36 @@ return 'Unknown';
 
 MakeScript("scr_itemname_good", ItemNameCode);
 
+MakeScript("scr_draw_overlay", @"
+x1 = SCREEN_WIDTH * 0.2;
+y1 = SCREEN_HEIGHT * 0.25;
+x2 = SCREEN_WIDTH * 0.8;
+y2 = SCREEN_HEIGHT * 0.75;
+
+draw_set_color(c_black);
+draw_set_alpha(BG_OPACITY);
+draw_rectangle(x1-10, y1-10, x2+10, y2+10, false);
+
+draw_set_alpha(1);
+draw_set_font(fnt_main);
+draw_set_halign(fa_left);
+draw_text_rainbow(x1, y1-6, argument0);
+
+draw_set_color(c_white);
+draw_set_font(fnt_maintext);
+
+xx = x1;
+yy = y1 + 30;
+");
+
+MakeScript("scr_draw_textinput_cursor", @"
+var cursor_pos = string_width(string_copy(text, 1, cursor)) + string_width('> ');
+draw_set_alpha(0.8);
+draw_set_color(c_aqua);
+draw_rectangle(xx+cursor_pos, yy+4, xx+cursor_pos, yy+2+font_get_size(fnt_maintext), false);
+draw_set_alpha(1);
+");
+
 MakeScript("scr_complete_roomname", @"
 for (var i = 0; room_exists(i); i++) {
     var name = room_get_name(i);
@@ -1105,7 +1167,7 @@ void RegisterHotkey(EventSubtypeKey key, string code, bool isGlobal = false, boo
     {
         code = "if (!instance_exists(obj_essaystuff)) {" + code + "}";
     }
-    code = "if (!instance_exists(obj_roomswitcher)) {" + code + "}";
+    code = "if (!instance_exists(obj_textinput)) {" + code + "}";
     ReplaceCode(EventHandler(objectName, eventType, key), code);
 }
 
@@ -1157,60 +1219,44 @@ void ImplNoclip()
             FindReplaceCode(action.CodeId, "global.phasing == 0", "!(global.phasing || global._noclip)");
         }
     }
-        
+
     FindReplaceCode(CollisionHandler("obj_heart", "obj_dborder"), "y = other.y - sprite_height;", "if (movement == 2 || !global._noclip) {y = other.y - sprite_height;}");
     FindReplaceCode(CollisionHandler("obj_heart", "obj_rborder"), "x = other.x - sprite_width;", "if (!global._noclip) {x = other.x - sprite_width;}");
     FindReplaceCode(CollisionHandler("obj_heart", "obj_uborder"), "y = other.y + other.sprite_height;", "if (!global._noclip) {y = other.y + other.sprite_height;}");
     FindReplaceCode(CollisionHandler("obj_heart", "obj_lborder"), "x = other.x + other.sprite_width;", "if (!global._noclip) {x = other.x + other.sprite_width;}");
 }
 
-void ImplRoomSwitcher()
+UndertaleGameObject ImplTextInput()
 {
-    UndertaleGameObject roomswitcher = new()
+    UndertaleGameObject textinput = new()
     {
-        Name = Data.Strings.MakeString("obj_roomswitcher"),
+        Name = Data.Strings.MakeString("obj_textinput"),
         Visible = true,
-        Persistent = true,
     };
-    Data.GameObjects.Add(roomswitcher);
+    Data.GameObjects.Add(textinput);
 
-    ReplaceCode(EventHandler(roomswitcher, EventType.Create, 0u), @"
+    ReplaceCode(EventHandler(textinput, EventType.Create, 0u), @"
 keyboard_string = '';
 text = '';
 length = 0;
 cursor = 0;
     ");
-    ReplaceCode(EventHandler(roomswitcher, EventType.Destroy, 0u), "global.interact = 0;");
-    ReplaceCode(EventHandler(roomswitcher, EventType.KeyPress, vk_left), @"
+    ReplaceCode(EventHandler(textinput, EventType.Destroy, 0u), "global.interact = 0;");
+    ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_left), @"
 if (keyboard_check(vk_control)) {
     cursor = 0;
 } else if (cursor > 0)  {
     cursor--;
 }
     ");
-    ReplaceCode(EventHandler(roomswitcher, EventType.KeyPress, vk_right), @"
+    ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_right), @"
 if (keyboard_check(vk_control)) {
     cursor = length;
 } else if (cursor < length)  {
     cursor++;
 }
     ");
-    ReplaceCode(EventHandler(roomswitcher, EventType.KeyPress, vk_enter), @"
-instance_destroy();
-var room_index = scr_parse_room(text);
-if (room_index) {
-    room = room_index;
-}
-    ");
-    ReplaceCode(EventHandler(roomswitcher, EventType.KeyPress, vk_tab), @"
-var name = scr_complete_roomname(text);
-if (name != '') {
-    text = name;
-    length = string_length(name);
-    cursor = length;
-}
-    ");
-    ReplaceCode(EventHandler(roomswitcher, EventType.KeyPress, vk_backspace), @"
+    ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_backspace), @"
 if (keyboard_check(vk_control)) {
     text = '';
     length = 0;
@@ -1221,7 +1267,7 @@ if (keyboard_check(vk_control)) {
     cursor--;
 }
     ");
-    ReplaceCode(EventHandler(roomswitcher, EventType.KeyPress, vk_delete), @"
+    ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_delete), @"
 if (keyboard_check(vk_control)) {
     text = '';
     length = 0;
@@ -1233,7 +1279,7 @@ if (keyboard_check(vk_control)) {
 // remove shitass DEL character that the runner apparently thinks is printable
 keyboard_string = string_delete(keyboard_string, string_length(keyboard_string), 1);
     ");
-    ReplaceCode(EventHandler(roomswitcher, EventSubtypeStep.Step), @"
+    ReplaceCode(EventHandler(textinput, EventSubtypeStep.Step), @"
 global.interact = 1;
 if (keyboard_string != '') {
     var inslen = string_length(keyboard_string);
@@ -1243,6 +1289,7 @@ if (keyboard_string != '') {
     keyboard_string = '';
 }
     ");
+    return textinput;
 }
 
 bool IsVisible(UndertaleGameObject obj)
@@ -1317,6 +1364,7 @@ bool CheckAlreadyPatched()
     return false;
 }
 
+// TODO: fix mettaton and asgore in code to display them correctly
 string BattlegroupCode => @"
 switch (argument0) {
     case 1: return 'Test Monster [UNUSED]';
