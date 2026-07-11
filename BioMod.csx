@@ -337,7 +337,7 @@ if (room == room_battle) {
         }
         draw_text_row(text);
     }
-    if (global.myfight == 0 && (global.bmenuno == 3 || global.bmenuno == 3.5)) {
+    if (global.mnfight == 0 && global.myfight == 0 && (global.bmenuno == 3 || global.bmenuno == 3.5)) {
         var itempos = global.bmenucoord[3] + ((global.bmenuno - 3) * 8);
         draw_text_row('Item Effect: ' + scr_itemstat(global.item[itempos]));
     }
@@ -721,7 +721,7 @@ MakeScript("scr_textbox_count", @"
 var len = array_length_1d(argument0.mystring);
 for (var i = 0; i < len; i++) {
     var s = argument0.mystring[i];
-    if (string_pos('%%', s) || string_pos('\C', s)) {
+    if (string_pos('/%', s) || string_pos('%%', s) || string_pos('\C', s)) {
         return i + 1;
     }
 }
