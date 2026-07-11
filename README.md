@@ -47,6 +47,7 @@ It's basically debug mode, but better.
 * Hotkey that unfreezes you (i.e. in cutscenes) and re-enables your menu
 * Hotkey to move to the previous/next room
 * Hotkey to get a punch card into the first slot of your inventory 
+* Hotkey to cancel an encounter / end the current battle
 * Hold a key to automatically mash away dialogue (like holding C in Deltarune)
 
 ## How to use

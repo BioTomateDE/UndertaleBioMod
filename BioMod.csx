@@ -230,10 +230,8 @@ if (instance_exists(obj_roomswitcher)) {
     }
     else {
         var candidate = scr_complete_roomname(txt);
-        if (candidate != '') {
-            draw_set_color(c_gray);
-            draw_text(inputx, inputy, '> ' + candidate);
-        }
+        draw_set_color(c_gray);
+        draw_text(inputx, inputy, '> ' + candidate);
         draw_set_color(c_white);
     }
     draw_text(inputx, inputy, '> ' + txt);
