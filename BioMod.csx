@@ -312,19 +312,24 @@ row = 0;
 if (room == room_battle) {
     draw_text_row('Battle Group: ' + string(global.battlegroup) + ' (' + scr_battlegroup_name(global.battlegroup) + ')');
 
-    var enemyhp = 'Enemy HP: ' + string(global.monsterhp[0]);
-    if (global.monster[1] || global.monster[2]) {
-        enemyhp += ', ' + string(global.monsterhp[1]);
-    }
-    if (global.monster[2]) {
-        enemyhp += ', ' + string(global.monsterhp[2]);
-    }
-    draw_text_row(enemyhp);
-
-    draw_text_row('Turn: ' + string(global.turn));
     if (verbose) {
         draw_text_row('X: ' + string(obj_heart.x) + ', Y: ' + string(obj_heart.y));
     }
+    
+    for (var i = 0; i < 3; i++) {
+        if (!global.monster[i]) continue;
+        if (verbose) {
+            var text = 'Enemy ' + string(i+1) + ' (' + global.monstername[i] + '): ' + string(global.monsterhp[i]) + '/' + string(global.monstermaxhp[i]) + ' HP | ' + string(global.monsterdef[i]) + ' DF';
+            if (global.xpreward[i] && global.goldreward[i]) {
+                text += ' | ' + string(global.xpreward[i]) + ' XP | ' + string(global.goldreward[i]) + ' G';
+            }
+            draw_text_row(text);
+        } else {
+            draw_text_row('Enemy ' + string(i+1) + ': ' + string(global.monsterhp[i]) + '/' + string(global.monstermaxhp[i]) + ' HP');
+        }
+    }
+
+    draw_text_row('Turn: ' + string(global.turn));
     if (global.mercy == 0) {
         var text = 'Flee Chance: ' + string(scr_fleechance()) + '%';
         if (verbose && reason != '') {  // set by scr_fleechance
