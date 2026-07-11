@@ -1053,9 +1053,7 @@ if (FIX)
     FindReplaceCode(EventHandler("obj_holeup2", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
     FindReplaceCode(EventHandler("obj_superdrophole", EventType.Alarm, 3u), "solid = 1;", "");
 
-    // Change parent from obj_readable to obj_readablesolid but get rid of `solid = 1`
-    GetObject("obj_convenientlamp").ParentId = GetObject("obj_readablesolid");
-    FindReplaceCode(EventHandler("obj_convenientlamp", EventSubtypeStep.BeginStep), "solid = 1;", "");
+    // TODO: setting convenient lamp `solid = 0` makes cutscene frisk keep walking forever lol
 
     // Introduce parent obj_solidparent and get rid of `solid = 1`
     GetObject("obj_torieltrigger2").ParentId = GetObject("obj_solidparent");
