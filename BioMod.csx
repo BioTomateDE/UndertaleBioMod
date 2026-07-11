@@ -312,10 +312,7 @@ row = 0;
 if (room == room_battle) {
     draw_text_row('Battle Group: ' + string(global.battlegroup) + ' (' + scr_battlegroup_name(global.battlegroup) + ')');
 
-    if (verbose) {
-        draw_text_row('X: ' + string(obj_heart.x) + ', Y: ' + string(obj_heart.y));
-    }
-    
+    if (global.battlegroup != 100) { // fixes asgore intro
     for (var i = 0; i < 3; i++) {
         if (!global.monster[i]) continue;
         if (verbose) {
@@ -328,8 +325,8 @@ if (room == room_battle) {
             draw_text_row('Enemy ' + string(i+1) + ': ' + string(global.monsterhp[i]) + '/' + string(global.monstermaxhp[i]) + ' HP');
         }
     }
+    }
 
-    draw_text_row('Turn: ' + string(global.turn));
     if (global.mercy == 0) {
         var text = 'Flee Chance: ' + string(scr_fleechance()) + '%';
         if (verbose && reason != '') {  // set by scr_fleechance
@@ -337,6 +334,18 @@ if (room == room_battle) {
         }
         draw_text_row(text);
     }
+    draw_text_row('Turn: ' + string(global.turn));
+
+    if (verbose) {
+        draw_text_row('Attack: ' + string(global.at) + '+' + string(global.wstrength) + ' (' + scr_itemname_good(global.weapon) + ')');
+        draw_text_row('Defense: ' + string(global.df) + '+' + string(global.adef) + ' (' + scr_itemname_good(global.armor) + ')');
+        if (global.invc) {
+            draw_text_row('Invincibility: ' + string(global.invc) + '/' + string(global.inv));
+        }
+    } else {
+        draw_text_row('AT: ' + string(global.at+global.wstrength) + ' | DF: ' + string(global.df+global.adef));
+    }
+
     if (global.mnfight == 0 && global.myfight == 0 && (global.bmenuno == 3 || global.bmenuno == 3.5)) {
         var itempos = global.bmenucoord[3] + ((global.bmenuno - 3) * 8);
         draw_text_row('Item Effect: ' + scr_itemstat(global.item[itempos]));
@@ -347,8 +356,8 @@ if (room == room_battle) {
         var avgdmg = round((mindmg + maxdmg) / 2);
         draw_text_row('Attack Damage: ' + string(mindmg) + '-' + string(maxdmg) + ' (Avg: ' + string(avgdmg) + ')');
     }
-    if (verbose && global.invc) {
-        draw_text_row('Invincibility: ' + string(global.invc));
+    if (verbose && global.mnfight) {
+        draw_text_row('X: ' + string(obj_heart.x) + ', Y: ' + string(obj_heart.y));
     }
 } else {
     if (verbose) {
@@ -383,7 +392,7 @@ if (room == room_battle) {
     if (!instance_exists(obj_triswitchevent)) {
         with (OBJ_WRITER) {
             row = other.row;
-            draw_text_row('Textboxes: ' + string(stringno+1) + '/' + string(scr_textbox_count(self)));
+            draw_text_row('Textbox: ' + string(stringno+1) + '/' + string(scr_textbox_count(self)));
             other.row = row;
         }
     }
@@ -862,6 +871,7 @@ switch (argument0) {
 return 'Unknown';
 ");
 
+MakeScript("scr_itemname_good", ItemNameCode);
 
 MakeScript("scr_complete_roomname", @"
 for (var i = 0; room_exists(i); i++) {
@@ -1308,7 +1318,7 @@ bool CheckAlreadyPatched()
 
 string BattlegroupCode => @"
 switch (argument0) {
-    case 1: return 'Test Monster';
+    case 1: return 'Test Monster [UNUSED]';
     case 2: return 'Dummy';
     case 3: return 'Fake Froggit';
     case 4: return 'Froggit';
@@ -1317,18 +1327,18 @@ switch (argument0) {
     case 7: return 'Moldsmal';
     case 8: return 'Moldsmal & Moldsmal & Moldsmal';
     case 9: return 'Froggit & Froggit';
-    case 10: return 'Moldsmal & Moldsmal (Ruins)';
+    case 10: return 'Moldsmal & Moldsmal';
     case 11: return 'Moldsmal & Migosp';
     case 12: return 'Migosp & Vegetoid';
     case 13: return 'Loox';
-    case 14: return 'Loox & Vegetoid';
+    case 14: return 'Loox & Vegetoid [UNUSED]';
     case 15: return 'Loox & Vegetoid & Migosp';
     case 16: return 'Vegetoid & Vegetoid';
     case 17: return 'Loox & Loox';
     case 18: return 'Vegetoid';
     case 19: return 'Too much';
     case 20: return 'Napstablook';
-    case 21: return 'Loox';
+    case 21: return 'Loox [UNUSED]';
     case 22: return 'Toriel';
     case 23: return 'Doggo';
     case 24: return 'Lesser Dog';
@@ -1337,10 +1347,10 @@ switch (argument0) {
     case 27: return 'Papyrus';
     case 28: return 'Gyftrot';
     case 30: return 'Snowdrake';
-    case 31: return 'Chilldrake & Chilldrake';
+    case 31: return 'Chilldrake & Chilldrake [UNUSED]';
     case 32: return 'Icecap';
-    case 33: return 'Icecap & Snowdrake';
-    case 34: return 'Jerry';
+    case 33: return 'Icecap & Snowdrake [UNUSED]';
+    case 34: return 'Jerry [UNUSED]';
     case 35: return 'Icecap & Jerry';
     case 36: return 'Icecap & Jerry & Snowdrake';
     case 40: return 'Aaron';
@@ -1366,23 +1376,23 @@ switch (argument0) {
     case 60: return 'Knight Knight';
     case 61: return 'Final Froggit';
     case 62: return 'Astigmatism';
-    case 63: return 'Whimsalot';
+    case 63: return 'Whimsalot [UNUSED]';
     case 64: return 'Whimsalot & Final Froggit';
     case 65: return 'Whimsalot & Astigmatism';
     case 66: return 'Final Froggit & Astigmatism';
     case 67: return 'Final Froggit & Astigmatism & Whimsalot';
     case 68: return 'Knight Knight & Madjick';
-    case 69: return 'Bomb';
+    case 69: return 'Bomb [UNUSED]';
     case 70: return 'Dog Bomb';
     case 71: return 'Extremely agile glass of water';
     case 72: return 'Script Bomb';
     case 73: return 'Basketball Bomb';
     case 74: return 'Present Bomb';
     case 75: return 'Game Bomb';
-    case 76: return 'Royal Guard 03 & Royal Guard 04';
+    case 76: return 'Royal Guard 03 & Royal Guard 04 [UNUSED]';
     case 77: return 'Tsunderplane & Vulkin';
     case 78: return 'Pyrope & Pyrope';
-    case 79: return 'Vulkin & Vulkin';
+    case 79: return 'Vulkin & Vulkin [UNUSED]';
     case 80: return 'Mettaton - CORE';
     case 81: return 'Mettaton EX';
     case 82: return 'Lemon Bread';
@@ -1399,8 +1409,8 @@ switch (argument0) {
     case 93: return 'Glad Dummy';
     case 94: return 'Mettaton NEO';
     case 95: return 'Sans';
-    case 100: return 'Asgore Intro';
-    case 101: return 'Asgore';
+    case 100: return 'Asgore'; // technically the intro
+    case 101: return 'Asgore [UNUSED]';
     case 120: return 'Final Froggit & Astigmatism [HARDMODE]';
     case 121: return 'Final Froggit & Migospel [HARDMODE]';
     case 122: return 'Parsnik [HARDMODE]';
@@ -1408,18 +1418,88 @@ switch (argument0) {
     case 124: return 'Moldessa & Moldessa & Moldessa [HARDMODE]';
     case 125: return 'Final Froggit & Whimsalot [HARDMODE]';
     case 126: return 'Final Froggit [HARDMODE]';
-    case 127: return 'Whimsalot & Parsnik [HARDMODE]';
+    case 127: return 'Whimsalot & Parsnik [HARDMODE, UNUSED]';
     case 128: return 'Moldessa & Migospel [HARDMODE]';
     case 129: return 'Parsnik & Migospel [HARDMODE]';
     case 130: return 'Parsnik & Parsnik [HARDMODE]';
-    case 131: return 'Parsnik & Astigmatism [HARDMODE]';
+    case 131: return 'Parsnik & Astigmatism [HARDMODE, UNUSED]';
     case 132: return 'Astigmatism & Astigmatism [HARDMODE]';
-    case 133: return 'Astigmatism & Migospel & Moldessa [HARDMODE]';
-    case 134: return 'Whimsalot & Parsnik & Moldessa [HARDMODE]';
+    case 133: return 'Astigmatism & Migospel & Moldessa [HARDMODE, UNUSED]';
+    case 134: return 'Whimsalot & Parsnik & Moldessa [HARDMODE, UNUSED]';
     case 135: return 'Glyde';
     case 140: return 'So Sorry';
     case 255: return 'Asriel - God of Hyperdeath';
     case 256: return 'Asriel - Final Form';
+}
+return 'Unknown';
+";
+
+string ItemNameCode => @"
+switch (argument0) {
+    case 1: return 'Monster Candy';
+    case 2: return 'Croquet Roll';
+    case 3: return 'Stick';
+    case 4: return 'Bandage';
+    case 5: return 'Rock Candy';
+    case 6: return 'Pumpkin Rings';
+    case 7: return 'Spider Donut';
+    case 8: return 'Stoic Onion';
+    case 9: return 'Ghost Fruit';
+    case 10: return 'Spider Cider';
+    case 11: return 'Butterscotch Pie';
+    case 12: return 'Faded Ribbon';
+    case 13: return 'Toy Knife';
+    case 14: return 'Tough Glove';
+    case 15: return 'Manly Bandanna';
+    case 16: return 'Snowman Piece';
+    case 17: return 'Nice Cream';
+    case 18: return 'Puppydough Icecream';
+    case 19: return 'Bisicle';
+    case 20: return 'Unisicle';
+    case 21: return 'Cinnamon Bun';
+    case 22: return 'Temmie Flakes';
+    case 23: return 'Abandoned Quiche';
+    case 24: return 'Old Tutu';
+    case 25: return 'Ballet Shoes';
+    case 26: return 'Punch Card';
+    case 27: return 'Annoying Dog';
+    case 28: return 'Dog Salad';
+    case 29: return 'Dog Residue 1';
+    case 30: return 'Dog Residue 2';
+    case 31: return 'Dog Residue 3';
+    case 32: return 'Dog Residue 4';
+    case 33: return 'Dog Residue 5';
+    case 34: return 'Dog Residue 7';
+    case 35: return 'Astronaut Food';
+    case 36: return 'Instant Noodles';
+    case 37: return 'Crab Apple';
+    case 38: return 'Hot Dog';
+    case 39: return 'Hot Cat';
+    case 40: return 'Glamburger';
+    case 41: return 'Sea Tea';
+    case 42: return 'Starfait';
+    case 43: return 'Legendary Hero';
+    case 44: return 'Cloudy Glasses';
+    case 45: return 'Torn Notebook';
+    case 46: return 'Stained Apron';
+    case 47: return 'Burnt Pan';
+    case 48: return 'Cowboy Hat';
+    case 49: return 'Empty Gun';
+    case 50: return 'Heart Locket';
+    case 51: return 'Worn Dagger';
+    case 52: return 'Real Knife';
+    case 53: return 'The Locket';
+    case 54: return 'Bad Memory';
+    case 55: return 'Dream';
+    case 56: return ""Undyne's Letter"";
+    case 57: return ""Undyne's Letter EX"";
+    case 58: return 'Potato Chips';
+    case 59: return 'Junk Food';
+    case 60: return 'Mystery Key';
+    case 61: return 'Face Steak';
+    case 62: return 'Hush Puppy';
+    case 63: return 'Snail Pie';
+    case 64: return 'Temmie Armor';
 }
 return 'Unknown';
 ";
