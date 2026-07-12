@@ -533,7 +533,7 @@ foreach (var obj in Data.GameObjects)
         }
     }
 
-    if (!obj.Visible && IsParent(obj, "obj_doorparent"))
+    if (!obj.Visible && IsParent(obj, "obj_doorparent") && !obj.Name.Content.Contains("iceevent"))
     {
         doors.Add(obj);
         SuppressRendering(obj);
@@ -614,8 +614,8 @@ if (global._hitbox) {
 ShowEvent("obj_bouncetileparent", true);
 GetObject("obj_holedown2").Visible = true;
 GetObject("obj_holedown3").Visible = true;
-
 GetObject("obj_iceevent").Visible = false;
+
 GetObject("obj_inwaterspot").Visible = false;
 ShowEvent("obj_teleigloo", true);
 PrependCode(EventHandler("obj_dogetrigger1", EventSubtypeDraw.Draw), "if (sprite_index == spr_event) exit;");
@@ -627,13 +627,6 @@ foreach (var objName in slopes)
     var obj = GetObject(objName);
     obj.Visible = true;
     ReplaceCode(EventHandler(obj, EventSubtypeStep.Step), "visible = global._hitbox");
-}
-
-if (FIX)
-{
-    FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
-    AppendCode(EventHandler("obj_asgoreb", EventType.Create, 0u), "global.battlegroup = 101;");
-    AppendCode(EventHandler("obj_mettatonex", EventType.Create, 0u), "global.battlegroup = 81;");
 }
 
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
@@ -1046,30 +1039,119 @@ if (global._hitbox) {
 ");
 
 
-// Fixes for noclip sometimes not working
 if (FIX)
 {
-    FindReplaceCode(EventHandler("obj_redswitch_1", EventType.Alarm, 3u), "obj_solidparent.solid = 1;", "");
-    FindReplaceCode(EventHandler("obj_torhandhold1", EventSubtypeStep.EndStep), "obj_spiketile2.solid = 1;", "");
-    FindReplaceCode(EventHandler("obj_holedown", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
-    FindReplaceCode(EventHandler("obj_asrielbed", EventSubtypeStep.BeginStep), "obj_solidsmall.solid = 1;", "");
-    FindReplaceCode(EventHandler("obj_holeup", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
-    FindReplaceCode(EventHandler("obj_holeup2", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
-    FindReplaceCode(EventHandler("obj_superdrophole", EventType.Alarm, 3u), "solid = 1;", "");
+    // Fix crashes for OBJ_WRITER Create when global.msg[0] == "%%%"
+    PrependCode(EventHandler("OBJ_WRITER", EventType.Create, 0u), "mystring[0] = '%%%'");
 
-    // TODO: setting convenient lamp `solid = 0` makes cutscene frisk keep walking forever lol
+    // Fix for battlegroup initializing as Fake Froggit for misc info
+    FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
 
-    // Introduce parent obj_solidparent and get rid of `solid = 1`
-    GetObject("obj_torieltrigger2").ParentId = GetObject("obj_solidparent");
-    GetObject("obj_torieltrigger2").Solid = false;
-    AppendCode(EventHandler("obj_torieltrigger2", EventType.Create, 0u), "phase = 0;");
+    // Fix battlegroup not updating in chained fight
+    AppendCode(EventHandler("obj_asgoreb", EventType.Create, 0u), "global.battlegroup = 101;");
+    AppendCode(EventHandler("obj_mettatonex", EventType.Create, 0u), "global.battlegroup = 81;");
 
-    // TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
+    // Fix not being able to phase through certain objects with noclip
+    {
+        FindReplaceCode(EventHandler("obj_redswitch_1", EventType.Alarm, 3u), "obj_solidparent.solid = 1;", "");
+        FindReplaceCode(EventHandler("obj_torhandhold1", EventSubtypeStep.EndStep), "obj_spiketile2.solid = 1;", "");
+        FindReplaceCode(EventHandler("obj_holedown", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+        FindReplaceCode(EventHandler("obj_asrielbed", EventSubtypeStep.BeginStep), "obj_solidsmall.solid = 1;", "");
+        FindReplaceCode(EventHandler("obj_holeup", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+        FindReplaceCode(EventHandler("obj_holeup2", EventType.Alarm, 2u), "obj_solidparent.solid = 1;", "");
+        FindReplaceCode(EventHandler("obj_superdrophole", EventType.Alarm, 3u), "solid = 1;", "");
+
+        // TODO: setting convenient lamp `solid = 0` makes cutscene frisk keep walking forever lol
+
+        // Introduce parent obj_solidparent and get rid of `solid = 1`
+        GetObject("obj_torieltrigger2").ParentId = GetObject("obj_solidparent");
+        GetObject("obj_torieltrigger2").Solid = false;
+        AppendCode(EventHandler("obj_torieltrigger2", EventType.Create, 0u), "phase = 0;");
+
+        // TODO: gml_Object_obj_shockblock_Step_0, gml_Object_obj_papyrus_guide_Step_1
+    }
+
+    // Fix instant crash for room 267 (room2).
+    // The obj_vaporized Create event calls get_vapordata which needs sprite_index to be one of these values:
+    // spr_undyneb_lastmelt, spr_torielboss_kneelsmile2, spr_dummybattle
+    FindReplaceCode(
+        EventHandler(GetObject("obj_vaporized"), EventType.Create, 0u),
+        "sprite_index =",
+        "sprite_index = spr_undyneb_lastmelt //"
+    );
+
+    // Fix unused topleft door in room 97 (room_water12) and bottom door crash in room 273 (room_water13)
+    foreach (var objInst in Data.Rooms.ByName("room_water12").GameObjects)
+    {
+        if (objInst.ObjectDefinition == GetObject("obj_door_ruins13"))
+            objInst.ObjectDefinition = GetObject("obj_door_u");
+        else if (objInst.ObjectDefinition == GetObject("obj_markerX"))
+            objInst.ObjectDefinition = GetObject("obj_markeru");
+    }
+
+    // Fixes crash after a 6.66 seconds in room 277 (bullettest)
+    AppendCode(EventHandler("obj_bulletgenthatched", EventType.Create, 0u), @"
+instance_create(0, 0, obj_uborder);
+instance_create(0, 0, obj_lborder);
+instance_create(0, 0, obj_dborder);
+instance_create(0, 0, obj_rborder);
+");
+
+    // Fix instant crash for room 294 (room_floweyx) and room 295 (room_f_phrase).
+    AppendCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.floss = 0; global.fplot = 0;");
+
+    // Fix right door crash  in room 296 (room_fire4)
+    foreach (var objInst in Data.Rooms.ByName("room_fire10_old").GameObjects)
+    {
+        if (objInst.ObjectDefinition == GetObject("obj_markert"))
+            objInst.ObjectDefinition = GetObject("obj_markerA");
+    }
+
+    // Fix right door softlock in room 297 (room_fire10_old)
+    foreach (var objInst in Data.Rooms.ByName("room_fire10_old").GameObjects)
+    {
+        if (objInst.ObjectDefinition == GetObject("obj_door_t"))
+            objInst.ObjectDefinition = GetObject("obj_doorB");
+    }
+
+    // Fix door crash in room 300 (room_ruins12B_old)
+    AppendCode(EventHandler("obj_doorD", EventType.Alarm, 2u), @"
+if (room == room_ruins12B_old) {
+    room = room_ruins12;
+    global.entrance = 2;
+}
+");
+
+    // Fix instant crash in room 302 (room_water7_older)
+    // This water pushrock generator doesn't set these variables if you're not in room_water3 or room_water7
+    PrependCode(EventHandler("obj_waterpushrockgen", EventType.Create, 0u), @"
+x1 = 80;
+x2 = 240;
+y1 = 180;
+y2 = 200;
+triggery = 263;
+    ");
+
+    // Fix doors in room 302 (room_water7_older)
+    AppendCode(EventHandler("obj_doorB", EventType.Alarm, 2u), "if (room == room_water7_older) room = room_water6;");
+    AppendCode(EventHandler("obj_doorA", EventType.Alarm, 2u), "if (room == room_water7_older) room = room_water8;");
+
+    // Fix doors in room 303 (room_meetundyne_old)
+    AppendCode(EventHandler("obj_doorD", EventType.Alarm, 2u), "if (room == room_meetundyne_old) room = room_water3;");
+    AppendCode(EventHandler("obj_doorA", EventType.Alarm, 2u), "if (room == room_meetundyne_old) room = room_water_bridgepuzz1;");
+
+    // Fix instant crash for manually going into room 310 (room_gameover)
+    AppendCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.myxb = 420; global.myyb = 69;");
+
+    // Fix bigass font for the shops
+    for (int i = 1; i <= 5; i++) {
+        PrependCode(EventHandler($"obj_shop{i}", EventType.Draw, 0u), "draw_set_font(fnt_maintext);");
+    }
 }
 
-    importGroup.Import();
+importGroup.Import();
 watermark.Content = WATERMARK;
-ScriptMessage($"Successfully patched BioMod v{MOD_VERSION}!\nPress F1 for help.");
+ScriptMessage($"Successfully patched BioMod v{MOD_VERSION}!\nPress {KeyName(HELP_KEY)} for help.");
 
 ////////////////////////////////////////////////// HELPERS
 class Err : Exception

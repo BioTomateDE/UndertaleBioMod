@@ -6,10 +6,13 @@ Feel free to open an Issue/PR to add stuff to this list.
 * Ballet Shoes / Torn Notebook / Burnt Pan: Show damage as array or something
 * Show situational numbers like cutscene timers (alarm)
 * Show remaining time of turn (global.turntimer?)
+* Show current route (including aborted/soulless)
+* Show area kills (at least in geno?)
 
 ## Hitboxes
 * Show in battle
 * Missing event triggers
+* papyrus date outfit
 
 ## Toggle Binds
 * Encounters
@@ -34,3 +37,6 @@ Feel free to open an Issue/PR to add stuff to this list.
 * Allow BATTLECANCEL to skip intro and gameover
 * global.inv does not always seem to be the max invincibility
 * text masher in battle doesnt (always) press X
+* text masher fucks up papdate at "GO AHEAD! OPEN IT!"
+* room selector autocomplete should work alphabetically not chronologically (also water7_ doesnt get autocompleted)
+* polish punchcard giver (make it work regardless of interact, get rid of dialoguer)
