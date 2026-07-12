@@ -91,7 +91,7 @@ RegisterHotkey(NOCLIP_KEY, "global._noclip = !global._noclip;", true);
 RegisterHotkey(MOVE_FREE_KEY, @"
 global.interact = 0;
 global.flag[17] = 0;
-global._movefree = true;
+global._movefree = 1;
 ", false, true);
 RegisterHotkey(PREVIOUS_ROOM_KEY, @"
 room_goto_previous();
@@ -109,7 +109,7 @@ if (FIX) {
 ");
 
 RegisterHotkey(MASH_TEXT_KEY, @"
-global._mashing = true;
+global._mashing = 1;
 with (OBJ_WRITER) {
     if (halt) {
         event_user(0);
@@ -150,7 +150,10 @@ if (FIX) {
 }
 ", true);
 
-RegisterHotkey(BATTLE_SELECTOR_KEY, "instance_create(0, 0, obj_battleselector);");
+RegisterHotkey(BATTLE_SELECTOR_KEY, @"
+instance_create(0, 0, obj_battleselector);
+global._help = 0;
+");
 
 PrependCode(Data.Scripts.ByName("scr_textskip").Code, @"
 if (global._mashing) {
@@ -216,7 +219,7 @@ if (global._speedhack == SPEEDHACK_SLOW_FPS) {
 
 RegisterHotkey(ROOM_SWITCHER_KEY, @"
 instance_create(0, 0, obj_roomswitcher);
-global._help = false;
+global._help = 0;
 ", true);
 
 UndertaleGameObject obj_textinput = ImplTextInput();
@@ -356,8 +359,8 @@ if (global._movefree) {
 
 // These variables are set in Keyboard events which are triggered every frame the key is held.
 // This makes sure this variables doesn't stay true forever without a KeyRelease event.
-global._mashing = false;
-global._movefree = false;
+global._mashing = 0;
+global._movefree = 0;
 
 // Draw Misc Info in the top-left corner
 if (global._info) {
