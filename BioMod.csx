@@ -315,7 +315,7 @@ with (obj_battleselector) {
 if (global._help) {
     scr_draw_overlay('BioMod');
 
-    draw_text(eks+8, y1+6, 'v' + MOD_VERSION);
+    draw_text(xpost+8, y1+6, 'v' + MOD_VERSION);
 
     if (global._thegame) {
         draw_sprite(spr_skatebone, 0, x2 -  48, y1 - 1);
@@ -637,12 +637,12 @@ AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
 display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 global._thegame = 0;
-global._help = false;
-global._info = false;
-global._hitbox = false;
-global._noclip = false;
-global._mashing = false;
-global._movefree = false;
+global._help = 0;
+global._info = 2;
+global._hitbox = 1;
+global._noclip = 0;
+global._mashing = 0;
+global._movefree = 0;
 
 global._speedhack = 30;
 global._stepmin = 0;
@@ -946,6 +946,7 @@ draw_set_alpha(1);
 draw_set_font(fnt_main);
 draw_set_halign(fa_left);
 draw_text_rainbow(x1, y1-6, argument0);
+xpost = x1 + string_width(argument0);
 
 draw_set_color(c_white);
 draw_set_font(fnt_maintext);
