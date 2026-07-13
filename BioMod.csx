@@ -89,6 +89,7 @@ UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN");
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
 display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+global._savestateslot = 1;
 global._thegame = 0;
 global._help = 0;
 global._info = 1;
@@ -218,6 +219,7 @@ for (var i = 7; i > 0; i--) {
     global.item[i] = global.item[i-1];
 }
 
+snd_play(snd_item);
 global.item[0] = PUNCHCARD;
 global._toastmsg = 'Have fun!';
 global._toasttimer = 1.5;
@@ -295,6 +297,8 @@ if (scr_battlegroup_name(bgroup) != 'Unknown') {
 ");
 
 ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
+scr_savestates();  // warning: this does more than draw
+
 draw_set_halign(fa_left);
 draw_set_font(fnt_maintext);
 
@@ -513,18 +517,18 @@ if (global._toasttimer > 0) {
     global._toasttimer -= 1/global._speedhack;
     
     var width = string_width(global._toastmsg);
-    var x1 = SCREEN_WIDTH/2 - width/2;
-    var x2 = SCREEN_WIDTH/2 + width/2;
-    var y1 = SCREEN_HEIGHT * 0.15;
-    var y2 = y1 + string_height(global._toastmsg);
+    var tx1 = SCREEN_WIDTH/2 - width/2;
+    var tx2 = SCREEN_WIDTH/2 + width/2;
+    var ty1 = SCREEN_HEIGHT * 0.15;
+    var ty2 = ty1 + string_height(global._toastmsg);
     
     draw_set_color(c_black)
     draw_set_alpha(alpha * BG_OPACITY);
-    draw_rectangle(x1-5, y1, x2+5, y2, false);
+    draw_rectangle(tx1 - 5, ty1, tx2 + 5, ty2, false);
     
     draw_set_alpha(alpha);
     draw_set_color(c_white);
-    draw_text(x1, y1, global._toastmsg);
+    draw_text(tx1, ty1, global._toastmsg);
     draw_set_alpha(1);
 }
 
@@ -692,6 +696,42 @@ foreach (var objName in slopes)
     obj.Visible = true;
     ReplaceCode(EventHandler(obj, EventSubtypeStep.Step), "visible = global._hitbox");
 }
+
+///////////////////////// scripts
+
+MakeScript("scr_savestates", @"
+if (instance_exists(obj_essaystuff) || instance_exists(obj_textinput)) exit;
+
+// number-row digit keys can select slots
+for (var i = 0; i <= 9; i++) {
+    if keyboard_check_pressed(i + 48) {
+        global._savestateslot = i;
+        global._toastmsg = 'Selected slot ' + string(i);
+        global._toasttimer = 1.5;
+        break;
+    }
+}
+
+// Credit to Oceanbagel and Spinyspinr for the base functionality
+if keyboard_check_pressed(ord('S')) {
+    global._toastmsg = 'Loaded slot ' + string(global._savestateslot);
+    global._toasttimer = 2.5;
+    directory_create('savestates'); // TODO: does ts work
+    // be very careful what the game state is before calling this function
+    game_save('savestates/' + string(global._savestateslot));
+    global._toastmsg = 'Saved slot ' + string(global._savestateslot);
+}
+else if keyboard_check_pressed(ord('L')) {
+    var file = 'savestates/' + string(global._savestateslot);
+    if (file_exists(file)) {
+        game_load(file);
+    }
+    else {
+        global._toastmsg = 'No save in slot ' + string(global._savestateslot);
+        global._toasttimer = 1.5;
+    }
+}
+");
 
 MakeScript("scr_battlegroup_name", BattlegroupCode);
 
