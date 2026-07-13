@@ -21,7 +21,6 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 ## Once Binds
 * Disable all modules
 * Start encounter
-* Mute all audio
 
 ## Features (more complex)
 * Savestates metadata: show preview for playtime, route, room?

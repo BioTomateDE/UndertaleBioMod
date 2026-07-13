@@ -524,17 +524,17 @@ if (global._toasttimer > 0) {
         alpha = global._toasttimer / 0.3;
     }
     global._toasttimer -= 1/global._speedhack;
-    
+
     var width = string_width(global._toastmsg);
     var tx1 = SCREEN_WIDTH/2 - width/2;
     var tx2 = SCREEN_WIDTH/2 + width/2;
     var ty1 = SCREEN_HEIGHT * 0.15;
     var ty2 = ty1 + string_height(global._toastmsg);
-    
+
     draw_set_color(c_black)
     draw_set_alpha(alpha * BG_OPACITY);
     draw_rectangle(tx1 - 5, ty1, tx2 + 5, ty2, false);
-    
+
     draw_set_alpha(alpha);
     draw_set_color(c_white);
     draw_text(tx1, ty1, global._toastmsg);
@@ -716,7 +716,7 @@ for (var i = 0; i <= 9; i++) {
     if keyboard_check_pressed(i + 48) {
         global._savestateslot = i;
         global._toastmsg = 'Selected slot ' + string(i);
-        global._toasttimer = 1.5;
+        global._toasttimer = 1;
         break;
     }
 }
@@ -1375,6 +1375,16 @@ triggery = 263;
     {
         PrependCode(EventHandler($"obj_shop{i}", EventType.Draw, 0u), "draw_set_font(fnt_maintext);");
     }
+
+    // Fix crash when attacking testmonster
+    AppendCode(EventHandler("obj_testmonster", EventType.Create, 0u), "ht = 100; wd = 100;");
+
+    // Fix crash at testmonster's turn
+    FindReplaceCode(
+        EventHandler("obj_testmonster", EventType.Step, 0u),
+        "gen = instance_create(x, y, obj_1sidegen);",
+        "gen = instance_create(x, y, obj_1sidegen); gen.myself = myself;"
+    );
 }
 
 importGroup.Import();
