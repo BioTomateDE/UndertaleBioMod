@@ -40,3 +40,4 @@ Feel free to open an Issue/PR to add stuff to this list.
 * text masher fucks up papdate at "GO AHEAD! OPEN IT!"
 * room selector autocomplete should work alphabetically not chronologically (also water7_ doesnt get autocompleted)
 * polish punchcard giver (make it work regardless of interact, get rid of dialoguer)
+* visual bug with blue soul in myfight menu (sans)

@@ -405,9 +405,9 @@ if (room == room_battle) {
         draw_text_row('AT: ' + string(global.at+global.wstrength) + ' | DF: ' + string(global.df+global.adef));
     }
 
-    if (global.mnfight == 0 && global.myfight == 0 && (global.bmenuno == 3 || global.bmenuno == 3.5)) {
-        var itempos = global.bmenucoord[3] + ((global.bmenuno - 3) * 8);
-        draw_text_row('Item Effect: ' + scr_itemstat(global.item[itempos]));
+    var hoveritem = scr_hoveringitem();
+    if (hoveritem != -1) {
+        draw_text_row('Item Effect: ' + scr_itemstat(global.item[hoveritem]));
     }
     if (instance_exists(obj_targetchoice) || instance_exists(obj_targetchoicefist) || instance_exists(obj_shoetargettest)) {
         var mindmg = scr_attackdamage(false);
@@ -792,6 +792,112 @@ for (var i = 0; i < len; i++) {
 // hopefully never hit lol
 ");
 
+MakeScript("scr_draw_overlay", @"
+x1 = SCREEN_WIDTH * 0.2;
+y1 = SCREEN_HEIGHT * 0.25;
+x2 = SCREEN_WIDTH * 0.8;
+y2 = SCREEN_HEIGHT * 0.75;
+
+draw_set_color(c_black);
+draw_set_alpha(BG_OPACITY);
+draw_rectangle(x1-10, y1-10, x2+10, y2+10, false);
+
+draw_set_alpha(1);
+draw_set_font(fnt_main);
+draw_set_halign(fa_left);
+draw_text_rainbow(x1, y1-6, argument0);
+xpost = x1 + string_width(argument0);
+
+draw_set_color(c_white);
+draw_set_font(fnt_maintext);
+
+xx = x1;
+yy = y1 + 30;
+");
+
+MakeScript("scr_draw_textinput_cursor", @"
+var cursor_pos = string_width(string_copy(text, 1, cursor)) + string_width('> ');
+draw_set_alpha(0.8);
+draw_set_color(c_aqua);
+draw_rectangle(xx+cursor_pos, yy+4, xx+cursor_pos, yy+2+font_get_size(fnt_maintext), false);
+draw_set_alpha(1);
+");
+
+MakeScript("scr_complete_roomname", @"
+for (var i = 0; room_exists(i); i++) {
+    var name = room_get_name(i);
+    if (string_starts_with(name, argument0)) {
+        return name;
+    }
+    if (string_starts_with(name, 'room_' + argument0)) {
+        return string_replace(name, 'room_', '');
+    }
+}
+return '';
+");
+
+// Idk how people were able to use GMS1, this sucks ass.
+// Recreation of GMS 2.3 function.
+MakeScript("string_starts_with", @"
+var i = 1;
+var len = min(string_length(argument0), string_length(argument1));
+while (i <= len) {
+    if (string_byte_at(argument0, i) != string_byte_at(argument1, i)) {
+        return false;
+    }
+    i++;
+}
+return true;
+");
+
+GetObject("obj_time").Visible = true;
+
+AppendCode(Data.Scripts.ByName("scr_steps").Code, @"
+if (alldead == 0) {
+    global._stepmin = floor(argument0 * populationfactor);
+    global._stepmax = floor((argument0 + argument1) * populationfactor);
+}
+else if (alldead == 1) {
+    global._stepmin = (argument0 + round(argument1 / 2)) * 5;
+    global._stepmax = global._stepmin;
+}
+else if (alldead == 2) {
+    global._stepmin = 20;
+    global._stepmax = 20;
+}
+");
+
+// Show first Toriel event trigger in room_ruins3
+GetObject("obj_torieltrigger2").Visible = true;
+ReplaceCode(EventHandler("obj_torieltrigger2", EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_set_alpha(1);
+    draw_set_color(c_aqua);
+
+    // Coords taken from gml_Object_obj_torieltrigger2_Step_0 and adjusted for bbox
+    // The numbers in parens are not important, they could be -inf and inf.
+    draw_line(160, (188), 160, (240));
+    draw_line((0), 188, (160), 188);
+}
+");
+
+// Show Alphys' "press 3rd switch" call trigger in room_fire10
+GetObject("obj_triswitchevent").Visible = true;
+ReplaceCode(EventHandler("obj_triswitchevent", EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_set_alpha(1);
+    draw_set_color(c_aqua);
+
+    // Coords taken from gml_Object_obj_triswitchevent_Step_0 and adjusted for bbox
+    // Unfortunately, mainchara's bbox is wider than the trigger,
+    // so the (irrelevant) left side is kinda wrong.
+    // (as a rectangle, this would theoretically need negative width)
+    draw_line(389, (-1), 389, 108, true);
+}
+");
+
+MakeScript("scr_itemname_good", ItemNameCode);
+
 MakeScript("scr_itemstat", @"
 // Info from gml_Script_scr_itemuseb
 switch (argument0) {
@@ -898,13 +1004,13 @@ switch (argument0) {
     case 57: return '---'; // Undyne Letter EX
     case 58: return '+13 HP';  // Popato Chisps
     case 59:  // Junk Food
-        if (instance_exists(obj_ratings_master)) {
+        if (instance_exists(obj_ratingsmaster)) {
             return '+17 HP, -50 Rating';
         }
         return '+17 HP';
     case 60: return '---';  // Mystery Key
     case 61:  // Face Steak
-        if (instance_exists(obj_ratings_master)) {
+        if (instance_exists(obj_ratingsmaster)) {
             return '+60 HP, +700 Rating';
         }
         return '+60 HP';
@@ -926,126 +1032,100 @@ switch (argument0) {
 return 'Unknown';
 ");
 
-MakeScript("scr_itemname_good", ItemNameCode);
-
-MakeScript("scr_draw_overlay", @"
-x1 = SCREEN_WIDTH * 0.2;
-y1 = SCREEN_HEIGHT * 0.25;
-x2 = SCREEN_WIDTH * 0.8;
-y2 = SCREEN_HEIGHT * 0.75;
-
-draw_set_color(c_black);
-draw_set_alpha(BG_OPACITY);
-draw_rectangle(x1-10, y1-10, x2+10, y2+10, false);
-
-draw_set_alpha(1);
-draw_set_font(fnt_main);
-draw_set_halign(fa_left);
-draw_text_rainbow(x1, y1-6, argument0);
-xpost = x1 + string_width(argument0);
-
-draw_set_color(c_white);
-draw_set_font(fnt_maintext);
-
-xx = x1;
-yy = y1 + 30;
+MakeScript("scr_foodheal", @"
+// Info from gml_Script_scr_itemuseb
+switch (argument0) {
+    case 1: return 10;  // Monster Candy
+    case 2: return 15;  // Croquet Roll
+    case 4: return 10;  // Bandage
+    case 5: return 1;  // Rock Candy
+    case 6: return 8;  // Pumpkin Rings
+    case 7: return 12;  // Spider Donut
+    case 8: return 5;  // Stoic Onion
+    case 9: return 16;  // Ghost Fruit
+    case 10: return 24;  // Spider Cider
+    case 11: return (global.hp < global.maxhp) ? (global.maxhp - global.hp) : 0;  // Butterscotch Pie
+    case 16: return 45;  // Snowman Piece
+    case 17: return 15;  // Nice Cream
+    case 18: return 28;  // Puppydough Icecream
+    case 19: return 11;  // Bisicle
+    case 20: return 11;  // Unisicle
+    case 21: return 22;  // Cinnamon Bun
+    case 22: return 2;  // Temmie Flakes
+    case 23: return 34;  // Abandoned Quiche
+    // TODO: case 28: return '+2/10/30/999 HP';  // Dog Salad
+    case 35: return 21;  // Astronaut Food
+    case 36: return global.inbattle ? (global.seriousbattle ? 90 : 4) : 15;  // Instant Noodles
+    case 37: return 18;  // Crab Apple
+    case 38: return 20;  // Hot Dog
+    case 39: return 21;  // Hot Cat
+    case 40: return 27;  // Glamburger
+    case 41: return 10;  // Sea Tea
+    case 42: return 14;  // Starfait
+    case 43: return 40;  // Legendary Hero
+    case 54: return global.hp <= 3 ? (global.maxhp - global.hp) : -1;  // Bad Memory
+    case 55: return 17; // Dream
+    case 58: return 13;  // Popato Chisps
+    case 59: return 17;  // Junk Food
+    case 61: return 60;  // Face Steak
+    case 62: return 65;  // Hush Puppy
+    case 11: return (global.hp < (global.maxhp - 1)) ? (global.maxhp - global.hp - 1) : 0;  // Snail Pie
+}
+return 0;  // for non-healing items
 ");
 
-MakeScript("scr_draw_textinput_cursor", @"
-var cursor_pos = string_width(string_copy(text, 1, cursor)) + string_width('> ');
-draw_set_alpha(0.8);
-draw_set_color(c_aqua);
-draw_rectangle(xx+cursor_pos, yy+4, xx+cursor_pos, yy+2+font_get_size(fnt_maintext), false);
-draw_set_alpha(1);
+MakeScript("scr_hoveringitem", @"
+// returns the item pos of the item you are hovering in battle or -1 otherwise.
+if (global.mnfight) return -1;
+if (global.myfight) return -1;
+if !(global.bmenuno == 3 || global.bmenuno == 3.5) return -1;
+return global.bmenucoord[3] + ((global.bmenuno - 3) * 8);
 ");
 
-MakeScript("scr_complete_roomname", @"
-for (var i = 0; room_exists(i); i++) {
-    var name = room_get_name(i);
-    if (string_starts_with(name, argument0)) {
-        return name;
-    }
-    if (string_starts_with(name, 'room_' + argument0)) {
-        return string_replace(name, 'room_', '');
-    }
+MakeScript("scr_hoveringitemheal", @"
+var hoveritem = scr_hoveringitem();
+if (hoveritem == -1) {
+    return 0;
 }
-return '';
+var heal = scr_foodheal(global.item[hoveritem]);
+return min(heal, global.maxhp - global.hp);
 ");
 
-// Idk how people were able to use GMS1, this sucks ass.
-// Recreation of GMS 2.3 function.
-MakeScript("string_starts_with", @"
-var i = 1;
-var len = min(string_length(argument0), string_length(argument1));
-while (i <= len) {
-    if (string_byte_at(argument0, i) != string_byte_at(argument1, i)) {
-        return false;
-    }
-    i++;
-}
-return true;
-");
-
-GetObject("obj_time").Visible = true;
-
-if (FIX)
-{
-    AppendCode(EventHandler("obj_battlecontroller", EventSubtypeOther.RoomEnd), "global.battlegroup = 0;");
-}
-
-AppendCode(Data.Scripts.ByName("scr_steps").Code, @"
-if (alldead == 0) {
-    global._stepmin = floor(argument0 * populationfactor);
-    global._stepmax = floor((argument0 + argument1) * populationfactor);
-}
-else if (alldead == 1) {
-    global._stepmin = (argument0 + round(argument1 / 2)) * 5;
-    global._stepmax = global._stepmin;
-}
-else if (alldead == 2) {
-    global._stepmin = 20;
-    global._stepmax = 20;
+string FUCKASS_QUERY = "draw_rectangle(275, 400, 275 + (global.hp * 1.2), 420, false);";
+FindReplaceCode(Data.Scripts.ByName("scr_binfowrite").Code, FUCKASS_QUERY, FUCKASS_QUERY + @"
+draw_set_color(c_lime);
+var heal = scr_hoveringitemheal();
+if (heal) {
+    var base = 275 + (global.hp * 1.2);
+    draw_rectangle(base, 400, base + (scr_hoveringitemheal() * 1.2), 420, false);
 }
 ");
 
-
-// Show first Toriel event trigger in room_ruins3
-GetObject("obj_torieltrigger2").Visible = true;
-ReplaceCode(EventHandler("obj_torieltrigger2", EventSubtypeDraw.Draw), @"
-if (global._hitbox) {
-    draw_set_alpha(1);
-    draw_set_color(c_aqua);
-
-    // Coords taken from gml_Object_obj_torieltrigger2_Step_0 and adjusted for bbox
-    // The numbers in parens are not important, they could be -inf and inf.
-    draw_line(160, (188), 160, (240));
-    draw_line((0), 188, (160), 188);
+string SHITASS_QUERY = "draw_sprite(spr_krmeter, 0, 265 + (global.maxhp * 1.2), 405);";
+FindReplaceCode(Data.Scripts.ByName("scr_binfowrite").Code, SHITASS_QUERY, SHITASS_QUERY + @"
+draw_set_color(c_lime);
+var heal = scr_hoveringitemheal();
+if (heal) {
+    var base = 255 + (global.hp * 1.2);
+    draw_rectangle(base, 400, base + (scr_hoveringitemheal() * 1.2), 420, false);
 }
 ");
-
-// Show Alphys' "press 3rd switch" call trigger in room_fire10
-GetObject("obj_triswitchevent").Visible = true;
-ReplaceCode(EventHandler("obj_triswitchevent", EventSubtypeDraw.Draw), @"
-if (global._hitbox) {
-    draw_set_alpha(1);
-    draw_set_color(c_aqua);
-
-    // Coords taken from gml_Object_obj_triswitchevent_Step_0 and adjusted for bbox
-    // Unfortunately, mainchara's bbox is wider than the trigger,
-    // so the (irrelevant) left side is kinda wrong.
-    // (as a rectangle, this would theoretically need negative width)
-    draw_line(389, (-1), 389, 108, true);
-}
-");
-
 
 if (FIX)
 {
     // Fix crashes for OBJ_WRITER Create when global.msg[0] == "%%%"
     PrependCode(EventHandler("OBJ_WRITER", EventType.Create, 0u), "mystring[0] = '%%%'");
 
-    // Fix for battlegroup initializing as Fake Froggit for misc info
+    // Properly deinitialize battlegroup to not show garbage in misc info
     FindReplaceCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.battlegroup = 3;", "global.battlegroup = 0;");
+
+    AppendCode(EventHandler("obj_battlecontroller", EventSubtypeOther.RoomEnd), @"
+// This if statement fixes Undyne the Undying fight ending immediately.
+// See room_restart() call in gml_Object_obj_mkid_battle_Step_0 for the reason.
+if !(global.battlegroup == 92 && instance_exists(obj_mkid_battle)) {
+    global.battlegroup = 0;
+}
+");
 
     // Fix battlegroup not updating in chained fight
     AppendCode(EventHandler("obj_asgoreb", EventType.Create, 0u), "global.battlegroup = 101;");
@@ -1144,7 +1224,8 @@ triggery = 263;
     AppendCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.myxb = 420; global.myyb = 69;");
 
     // Fix bigass font for the shops
-    for (int i = 1; i <= 5; i++) {
+    for (int i = 1; i <= 5; i++)
+    {
         PrependCode(EventHandler($"obj_shop{i}", EventType.Draw, 0u), "draw_set_font(fnt_maintext);");
     }
 }
