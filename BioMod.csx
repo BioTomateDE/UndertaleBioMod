@@ -86,6 +86,25 @@ MapObjects();
 if (CheckAlreadyPatched()) return;
 UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN");
 
+AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
+display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+global._thegame = 0;
+global._help = 0;
+global._info = 1;
+global._hitbox = 0;
+global._noclip = 0;
+global._mashing = 0;
+global._movefree = 0;
+
+global._toastmsg = '';
+global._toasttimer = 0;
+
+global._speedhack = 30;
+global._stepmin = 0;
+global._stepmax = 0;
+");
+
 RegisterHotkey(SHOW_HITBOXES_KEY, "global._hitbox = !global._hitbox;", true);
 RegisterHotkey(NOCLIP_KEY, "global._noclip = !global._noclip;", true);
 RegisterHotkey(MOVE_FREE_KEY, @"
@@ -180,31 +199,28 @@ if (global._mashing) {
 ");
 
 RegisterHotkey(GET_PUNCHCARD_KEY, @"
-if (global.interact) exit;
+#macro PUNCHCARD 26
+if (global.item[0] == PUNCHCARD) {
+    global._toastmsg = 'Have fun!';
+    global._toasttimer = 1;
+    exit;
+};
 
-var punchcount = -1;
-do {
-    scr_itemremove(26);
-    punchcount++;
-} until (!removed);
-
+scr_itemremove(PUNCHCARD);
 if (global.item[7]) {
-    global.msg[0] = ""* You don't have enough space!/%%"";
-    scr_regulartext();
+    global._toastmsg = 'No space!';
+    global._toasttimer = 2;
     exit;
 }
 
+// shift all items up
 for (var i = 7; i > 0; i--) {
     global.item[i] = global.item[i-1];
 }
-global.item[0] = 26;
-if (punchcount < 1) {
-    global.msg[0] = '* Have fun ;3/%%';
-} else {
-    global.msg[0] = ""* What^1? No^1, you can't get a&  second punch card!/%%"";
-}
-// TODO: you can move through this.
-scr_regulartext();
+
+global.item[0] = PUNCHCARD;
+global._toastmsg = 'Have fun!';
+global._toasttimer = 1.5;
 ");
 
 RegisterHotkey(SHOW_INFO_KEY, "if (++global._info > 2) global._info = 0;", true);
@@ -488,6 +504,30 @@ if (room == room_battle) {
 }
 }
 
+// draw toast popup thingy
+if (global._toasttimer > 0) {
+    var alpha = 1;
+    if (global._toasttimer < 0.3 /*seconds*/) {
+        alpha = global._toasttimer / 0.3;
+    }
+    global._toasttimer -= 1/global._speedhack;
+    
+    var width = string_width(global._toastmsg);
+    var x1 = SCREEN_WIDTH/2 - width/2;
+    var x2 = SCREEN_WIDTH/2 + width/2;
+    var y1 = SCREEN_HEIGHT * 0.15;
+    var y2 = y1 + string_height(global._toastmsg);
+    
+    draw_set_color(c_black)
+    draw_set_alpha(alpha * BG_OPACITY);
+    draw_rectangle(x1-5, y1, x2+5, y2, false);
+    
+    draw_set_alpha(alpha);
+    draw_set_color(c_white);
+    draw_text(x1, y1, global._toastmsg);
+    draw_set_alpha(1);
+}
+
 // fix for soundtest gui
 draw_set_font(fnt_main);
 ");
@@ -652,22 +692,6 @@ foreach (var objName in slopes)
     obj.Visible = true;
     ReplaceCode(EventHandler(obj, EventSubtypeStep.Step), "visible = global._hitbox");
 }
-
-AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
-display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-global._thegame = 0;
-global._help = 0;
-global._info = 1;
-global._hitbox = 0;
-global._noclip = 0;
-global._mashing = 0;
-global._movefree = 0;
-
-global._speedhack = 30;
-global._stepmin = 0;
-global._stepmax = 0;
-");
 
 MakeScript("scr_battlegroup_name", BattlegroupCode);
 
