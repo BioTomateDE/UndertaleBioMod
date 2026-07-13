@@ -35,6 +35,7 @@ var SPEEDHACK_SLOW_KEY = G;     // Decreases the game speed to SPEEDHACK_SLOW_FP
 var SPEEDHACK_FAST_KEY = F;     // Increases the game speed to SPEEDHACK_FAST_FPS frames per second
 var GET_PUNCHCARD_KEY = P;      // Gives you a punchcard in the first inventory slot
 var CANCEL_KEY = E;             // Stops an encounter or battle immediately, skips the intro, skips gameover
+var STOP_AUDIO_KEY = A;         // Stops all currently playing music and sounds
 // ================================================
 
 const string MOD_VERSION = "0";
@@ -79,6 +80,7 @@ MakeKeyMacro("SPEEDHACK_SLOW", SPEEDHACK_SLOW_KEY);
 MakeKeyMacro("SPEEDHACK_FAST", SPEEDHACK_FAST_KEY);
 MakeKeyMacro("PUNCHCARD", GET_PUNCHCARD_KEY);
 MakeKeyMacro("CANCEL", CANCEL_KEY);
+MakeKeyMacro("STOPAUDIO", STOP_AUDIO_KEY);
 
 Dictionary<string, (int, UndertaleGameObject)> ObjectMap = new();
 MapObjects();
@@ -138,6 +140,12 @@ with (OBJ_WRITER) {
     }
 }
 ", true, true);
+
+RegisterHotkey(STOP_AUDIO_KEY, @"
+audio_stop_all();
+global._toastmsg = 'Stopped all audio';
+global._toasttimer = 0.7;
+", true);
 
 RegisterHotkey(CANCEL_KEY, @"
 if (room < room_area1 && file_exists('file0')) {
@@ -371,6 +379,7 @@ if (global._help) {
     scr_draw_help_row(KEY_MASH, 'Skips dialogue as fast as possible while held');
     scr_draw_help_row(KEY_PUNCHCARD, 'Gives you a punchcard (needs menu and dialogue closed)');
     scr_draw_help_row(KEY_CANCEL, 'Cancels battles, skips intro/gameover');
+    scr_draw_help_row(KEY_STOPAUDIO, 'Stops all currently playing music and sounds');
 }
 
 // Draw active modules in rainbow color in the top-right corner
