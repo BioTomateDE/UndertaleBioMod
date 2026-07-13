@@ -44,3 +44,4 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 * room selector autocomplete should work alphabetically not chronologically (also water7_ doesnt get autocompleted)
 * visual bug with blue soul in myfight menu (sans)
 * floweybattle noclip and cancel
+* vanilla bug: when u exit battle fast, the bg music is quieter

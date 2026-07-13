@@ -442,6 +442,10 @@ if (room == room_battle) {
             draw_text_row('X: ?, Y: ?');
         }
     }
+    if (global.plot > 9) {
+        draw_text_row('Route: ' + scr_getroute());
+    }
+    draw_text_row('Area: ' + string(scr_getarea())); // TODO remove
     draw_text_row('Room: ' + string(room) + ' (' + room_get_name(room) + ')');
     draw_text_row('Interact: ' + string(global.interact));
     draw_text_row('Plot: ' + string(global.plot));
@@ -849,6 +853,60 @@ for (var i = 0; room_exists(i); i++) {
 }
 return '';
 ");
+
+MakeScript("scr_getroute", @"
+var soulless = file_exists('system_information_963');
+if (global.kills == 0) {
+    return soulless ? 'Soulless Pacifist' : 'Pacifist';
+}
+if (murdererlv1()) {
+    var s = soulless ? 'Soulless Genocide' : 'Genocide';
+    if (global.flag[27]) {
+        s = 'Aborted ' + s;
+    }
+    s += ' (MLV ' + string(scr_murderlv()) + ')';
+    return s;
+}
+// TODO: more specific?
+return 'Neutral';
+");
+
+
+{
+    List<int> ruins_rooms = new();
+    List<int> snowdin_rooms = new();
+    List<int> waterfall_rooms = new();
+    List<int> hotland_core_rooms = new();
+    for (int i = 0; i < Data.Rooms.Count; i++)
+    {
+        string name = Data.Rooms[i].Name.Content;
+        if (name.StartsWith("room_ruins")) ruins_rooms.Add(i);
+        if (name.StartsWith("room_tundra")) snowdin_rooms.Add(i);
+        if (name.StartsWith("room_water")) waterfall_rooms.Add(i);
+        if (name.StartsWith("room_fire")) hotland_core_rooms.Add(i);
+    }
+    string src = "switch (global.currentroom) {";
+    
+    foreach (int id in ruins_rooms)
+        src += $"case {id}:";
+    src += "return 1;";
+    
+    foreach (int id in snowdin_rooms)
+        src += $"case {id}:";
+    src += "return 2;";
+    
+    foreach (int id in waterfall_rooms)
+        src += $"case {id}:";
+    src += "return 3;";
+    
+    foreach (int id in hotland_core_rooms)
+        src += $"case {id}:";
+    src += "return 4;";
+
+    src += "} return 0;";
+    MakeScript("scr_getarea", src);
+}
+
 
 // Idk how people were able to use GMS1, this sucks ass.
 // Recreation of GMS 2.3 function.
