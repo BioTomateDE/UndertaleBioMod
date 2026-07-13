@@ -442,19 +442,25 @@ if (room == room_battle) {
             draw_text_row('X: ?, Y: ?');
         }
     }
+    var route = scr_getroute();  // sets bool variable `genocide`
     if (global.plot > 9) {
-        draw_text_row('Route: ' + scr_getroute());
+        draw_text_row('Route: ' + route);
     }
-    draw_text_row('Area: ' + string(scr_getarea())); // TODO remove
+    if (genocide) {
+        var areakills = scr_areakills();  // sets int variable `maxkills`
+        if (areakills != -1) {
+            draw_text_row('Kills: ' + string(areakills) + '/' + string(maxkills) + ' (' + string(global.kills) + ')');
+        }
+    }
     draw_text_row('Room: ' + string(room) + ' (' + room_get_name(room) + ')');
     draw_text_row('Interact: ' + string(global.interact));
     draw_text_row('Plot: ' + string(global.plot));
     if (instance_exists(obj_encountererparent)) {
+        draw_text_row('Steps: ' + string(global.encounter) + '/' + string(floor(obj_encountererparent.steps)));
         if (verbose) {
             draw_text_row('Encounterer: ' + object_get_name(obj_encountererparent.object_index));
+            draw_text_row('Steps RNG: ' + string(global._stepmin) + '-' + string(global._stepmax) + ' (Avg: ' + string(floor((global._stepmax + global._stepmin) / 2)) + ')');
         }
-        draw_text_row('Steps: ' + string(global.encounter) + '/' + string(floor(obj_encountererparent.steps)));
-        draw_text_row('Steps RNG: ' + string(global._stepmin) + '-' + string(global._stepmax) + ' (Avg: ' + string(floor((global._stepmax + global._stepmin) / 2)) + ')');
     }
     if (global.battlegroup) {
         draw_text_row('Battle Group: ' + string(global.battlegroup) + ' (' + scr_battlegroup_name(global.battlegroup) + ')');
@@ -652,8 +658,8 @@ display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 global._thegame = 0;
 global._help = 0;
-global._info = 2;
-global._hitbox = 1;
+global._info = 1;
+global._hitbox = 0;
 global._noclip = 0;
 global._mashing = 0;
 global._movefree = 0;
@@ -855,14 +861,18 @@ return '';
 ");
 
 MakeScript("scr_getroute", @"
+genocide = global.kills && global.plot < 18;
 var soulless = file_exists('system_information_963');
 if (global.kills == 0) {
     return soulless ? 'Soulless Pacifist' : 'Pacifist';
 }
 if (murdererlv1()) {
     var s = soulless ? 'Soulless Genocide' : 'Genocide';
-    if (global.flag[27]) {
+    // very useless special case where you kill everyone in snowdin except for snowdrake
+    if (global.flag[27] || (global.flag[203] >= 16 && global.flag[57] != 2)) {
         s = 'Aborted ' + s;
+    } else {
+        genocide = 1;
     }
     s += ' (MLV ' + string(scr_murderlv()) + ')';
     return s;
@@ -886,25 +896,25 @@ return 'Neutral';
         if (name.StartsWith("room_fire")) hotland_core_rooms.Add(i);
     }
     string src = "switch (global.currentroom) {";
-    
+
     foreach (int id in ruins_rooms)
         src += $"case {id}:";
-    src += "return 1;";
-    
+    src += "maxkills = 20; return global.flag[202];";
+
     foreach (int id in snowdin_rooms)
         src += $"case {id}:";
-    src += "return 2;";
-    
+    src += "maxkills = 16; return global.flag[203];";
+
     foreach (int id in waterfall_rooms)
         src += $"case {id}:";
-    src += "return 3;";
-    
+    src += "maxkills = 18; return global.flag[204];";
+
     foreach (int id in hotland_core_rooms)
         src += $"case {id}:";
-    src += "return 4;";
+    src += "maxkills = 40; return global.flag[205];";
 
-    src += "} return 0;";
-    MakeScript("scr_getarea", src);
+    src += "} return -1;";
+    MakeScript("scr_areakills", src);
 }
 
 

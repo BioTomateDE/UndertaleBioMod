@@ -7,7 +7,6 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 * Show situational numbers like cutscene timers (alarm)
 * Show remaining time of turn (global.turntimer?)
 * Show current route (including aborted/soulless)
-* Show area kills (at least in geno?)
 
 ## Hitboxes
 * Show in battle
@@ -45,3 +44,5 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 * visual bug with blue soul in myfight menu (sans)
 * floweybattle noclip and cancel
 * vanilla bug: when u exit battle fast, the bg music is quieter
+* battlebox size is fucked sometimes
+* testmonster attack crash
