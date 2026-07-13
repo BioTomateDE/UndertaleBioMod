@@ -1,6 +1,6 @@
 # TODOs
 These are some things I want to implement.
-Feel free to open an Issue/PR to add stuff to this list.
+Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 
 ## Infos
 * Ballet Shoes / Torn Notebook / Burnt Pan: Show damage as array or something
@@ -15,23 +15,23 @@ Feel free to open an Issue/PR to add stuff to this list.
 * papyrus date outfit
 
 ## Toggle Binds
-* Encounters
-* Run fast (like in debug / Deltarune)
+* Step-based encounters on/off
+* Frisk run fast (like in debug / Deltarune)
 * Walk slow (1 px per frame) for perfect alignment
 
 ## Once Binds
 * Disable all modules
 * Start encounter
-* Stop battle
 * Mute all audio
 
 ## Features (more complex)
 * Add my savestates mod
-* Modify stats
-* Free camera
+* Modify stats (HP, AT, DF, and all other numbers that invoke the CHARA feeling when increased)
+* Free camera: show beyond room bounds, remove fixpoint in cutscenes (**HELP WANTED!** idk how to do this)
 * Rebind vanilla keys (e.g. WASD)
 
 ## Small QOL
+* polish textinput completion (room/battlegroup selector): up/down arrow cycling between suggestions, ctrl+up/down for cycling pages?
 * polish punchcard giver (make it work regardless of interact, get rid of dialoguer)
 * Polish the battlegroup selector
 * allow battlegroup selector to start battles even if no mainchara exists

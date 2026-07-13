@@ -1569,7 +1569,6 @@ bool CheckAlreadyPatched()
     return false;
 }
 
-// TODO: fix mettaton and asgore in code to display them correctly
 string BattlegroupCode => @"
 unused = 0;
 hardmode = 0;
