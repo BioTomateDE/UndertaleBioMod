@@ -406,6 +406,9 @@ if (global._movefree) {
 global._mashing = 0;
 global._movefree = 0;
 
+
+show_debug_message(string_starts_with('water7_older', 'water7'));
+
 // Draw Misc Info in the top-left corner
 if (global._info) {
 var verbose = global._info == 2;
@@ -995,8 +998,9 @@ return 'Neutral';
 // Idk how people were able to use GMS1, this sucks ass.
 // Recreation of GMS 2.3 function.
 MakeScript("string_starts_with", @"
+var len = string_length(argument1);
+if (len > string_length(argument0)) return false;
 var i = 1;
-var len = min(string_length(argument0), string_length(argument1));
 while (i <= len) {
     if (string_byte_at(argument0, i) != string_byte_at(argument1, i)) {
         return false;

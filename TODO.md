@@ -43,4 +43,3 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 * floweybattle noclip and cancel
 * vanilla bug: when u exit battle fast, the bg music is quieter
 * battlebox size is fucked sometimes
-* testmonster attack crash
