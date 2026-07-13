@@ -31,13 +31,16 @@ Feel free to open an Issue/PR to add stuff to this list.
 * Free camera
 * Rebind vanilla keys (e.g. WASD)
 
+## Small QOL
+* polish punchcard giver (make it work regardless of interact, get rid of dialoguer)
+* Polish the battlegroup selector
+* allow battlegroup selector to start battles even if no mainchara exists
+* Allow BATTLECANCEL to skip intro and gameover
+
 ## Fixes
 * Fix runtime error for 1.00
-* Polish the battlegroup selector
-* Allow BATTLECANCEL to skip intro and gameover
 * global.inv does not always seem to be the max invincibility
 * text masher in battle doesnt (always) press X
 * text masher fucks up papdate at "GO AHEAD! OPEN IT!"
 * room selector autocomplete should work alphabetically not chronologically (also water7_ doesnt get autocompleted)
-* polish punchcard giver (make it work regardless of interact, get rid of dialoguer)
 * visual bug with blue soul in myfight menu (sans)

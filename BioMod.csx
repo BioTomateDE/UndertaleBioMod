@@ -1082,33 +1082,25 @@ if !(global.bmenuno == 3 || global.bmenuno == 3.5) return -1;
 return global.bmenucoord[3] + ((global.bmenuno - 3) * 8);
 ");
 
-MakeScript("scr_hoveringitemheal", @"
+MakeScript("scr_hoveritemhealhp", @"
 var hoveritem = scr_hoveringitem();
 if (hoveritem == -1) {
-    return 0;
+    return global.hp;
 }
 var heal = scr_foodheal(global.item[hoveritem]);
-return min(heal, global.maxhp - global.hp);
+return global.hp + min(heal, global.maxhp - global.hp);
 ");
 
-string FUCKASS_QUERY = "draw_rectangle(275, 400, 275 + (global.hp * 1.2), 420, false);";
+string FUCKASS_QUERY = "draw_rectangle(275, 400, 275 + (global.maxhp * 1.2), 420, false);";
 FindReplaceCode(Data.Scripts.ByName("scr_binfowrite").Code, FUCKASS_QUERY, FUCKASS_QUERY + @"
 draw_set_color(c_lime);
-var heal = scr_hoveringitemheal();
-if (heal) {
-    var base = 275 + (global.hp * 1.2);
-    draw_rectangle(base, 400, base + (scr_hoveringitemheal() * 1.2), 420, false);
-}
+draw_rectangle(275, 400, 275 + (scr_hoveritemhealhp() * 1.2), 420, false);
 ");
 
-string SHITASS_QUERY = "draw_sprite(spr_krmeter, 0, 265 + (global.maxhp * 1.2), 405);";
+string SHITASS_QUERY = "draw_rectangle(255, 400, 255 + (global.maxhp * 1.2), 420, false);";
 FindReplaceCode(Data.Scripts.ByName("scr_binfowrite").Code, SHITASS_QUERY, SHITASS_QUERY + @"
 draw_set_color(c_lime);
-var heal = scr_hoveringitemheal();
-if (heal) {
-    var base = 255 + (global.hp * 1.2);
-    draw_rectangle(base, 400, base + (scr_hoveringitemheal() * 1.2), 420, false);
-}
+draw_rectangle(255, 400, 255 + (scr_hoveritemhealhp() * 1.2), 420, false);
 ");
 
 if (FIX)
