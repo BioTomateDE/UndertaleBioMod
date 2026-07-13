@@ -34,7 +34,7 @@ var BATTLE_SELECTOR_KEY = B;    // Opens an interface where you can type in batt
 var SPEEDHACK_SLOW_KEY = G;     // Decreases the game speed to SPEEDHACK_SLOW_FPS frames per second
 var SPEEDHACK_FAST_KEY = F;     // Increases the game speed to SPEEDHACK_FAST_FPS frames per second
 var GET_PUNCHCARD_KEY = P;      // Gives you a punchcard in the first inventory slot
-var BATTLE_CANCEL_KEY = E;      // Stops an encounter or battle immediately
+var CANCEL_KEY = E;             // Stops an encounter or battle immediately, skips the intro, skips gameover
 // ================================================
 
 const string MOD_VERSION = "0";
@@ -78,7 +78,7 @@ MakeKeyMacro("MASH", MASH_TEXT_KEY);
 MakeKeyMacro("SPEEDHACK_SLOW", SPEEDHACK_SLOW_KEY);
 MakeKeyMacro("SPEEDHACK_FAST", SPEEDHACK_FAST_KEY);
 MakeKeyMacro("PUNCHCARD", GET_PUNCHCARD_KEY);
-MakeKeyMacro("BATTLECANCEL", BATTLE_CANCEL_KEY);
+MakeKeyMacro("CANCEL", CANCEL_KEY);
 
 Dictionary<string, (int, UndertaleGameObject)> ObjectMap = new();
 MapObjects();
@@ -119,7 +119,20 @@ with (OBJ_WRITER) {
 }
 ", true, true);
 
-RegisterHotkey(BATTLE_CANCEL_KEY, @"
+RegisterHotkey(CANCEL_KEY, @"
+if (room < room_area1 && file_exists('file0')) {
+    audio_stop_all();
+    global.filechoice = 0;
+    scr_load();
+    exit;
+}
+
+if (room == room_gameover) {
+    audio_stop_all();
+    room_goto(global.currentroom);
+    exit;
+}
+
 if (room == room_battle) {
     if (global.flag[15] == 0) {
         audio_stop_sound(global.batmusic);
@@ -127,6 +140,7 @@ if (room == room_battle) {
     room_goto(global.currentroom);
     exit;
 }
+
 with (obj_battler) {
     global.interact = 0;
     instance_destroy();
@@ -336,7 +350,7 @@ if (global._help) {
     scr_draw_help_row(KEY_SPEEDHACK_FAST, 'Speeds the game up to ' + string(SPEEDHACK_FAST_FPS) + ' FPS');
     scr_draw_help_row(KEY_MASH, 'Skips dialogue as fast as possible while held');
     scr_draw_help_row(KEY_PUNCHCARD, 'Gives you a punchcard (needs menu and dialogue closed)');
-    scr_draw_help_row(KEY_BATTLECANCEL, 'Cancels the current encounter/battle');
+    scr_draw_help_row(KEY_CANCEL, 'Cancels battles, skips intro/gameover');
 }
 
 // Draw active modules in rainbow color in the top-right corner
