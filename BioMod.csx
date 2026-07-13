@@ -192,11 +192,6 @@ if (FIX) {
 }
 ", true);
 
-RegisterHotkey(BATTLE_SELECTOR_KEY, @"
-instance_create(0, 0, obj_battleselector);
-global._help = 0;
-");
-
 PrependCode(Data.Scripts.ByName("scr_textskip").Code, @"
 if (global._mashing) {
     with (OBJ_WRITER) {
@@ -300,9 +295,15 @@ instance_destroy();
 var bgroup = real(text);
 if (scr_battlegroup_name(bgroup) != 'Unknown') {
     global.battlegroup = bgroup;
-    instance_create(0, 0, obj_battler);
+    room = room_battle;
+    //instance_create(0, 0, obj_battler);
 }
 ");
+
+RegisterHotkey(BATTLE_SELECTOR_KEY, @"
+instance_create(0, 0, obj_battleselector);
+global._help = 0;
+", true);
 
 ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
 scr_savestates();  // warning: this does more than draw
@@ -1260,6 +1261,9 @@ draw_rectangle(255, 400, 255 + (scr_hoveritemhealhp() * 1.2), 420, false);
 
 if (FIX)
 {
+    // Fixes (half) softlock in some cases
+    PrependCode(EventHandler("obj_time", EventSubtypeStep.EndStep), "if (room == room_start) room_goto_next();");
+    
     // Fix crashes for OBJ_WRITER Create when global.msg[0] == "%%%"
     PrependCode(EventHandler("OBJ_WRITER", EventType.Create, 0u), "mystring[0] = '%%%'");
 

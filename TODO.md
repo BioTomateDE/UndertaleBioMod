@@ -27,11 +27,11 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 * Modify stats (HP, AT, DF, and all other numbers that invoke the CHARA feeling when increased)
 * Free camera: show beyond room bounds, remove fixpoint in cutscenes (**HELP WANTED!** idk how to do this)
 * Rebind vanilla keys (e.g. WASD)
+* Some mode (kinda like noclip) where you don't trigger doors or event triggers
 
 ## Small QOL
 * polish textinput completion (room/battlegroup selector): up/down arrow cycling between suggestions, ctrl+up/down for cycling pages?
 * Polish the battlegroup selector
-* allow battlegroup selector to start battles even if no mainchara exists
 
 ## Fixes
 * Fix runtime error for 1.00
