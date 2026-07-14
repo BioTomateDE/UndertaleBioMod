@@ -268,18 +268,17 @@ UndertaleGameObject obj_roomswitcher = new()
 Data.GameObjects.Add(obj_roomswitcher);
 ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_enter), @"
 instance_destroy();
-var room_index = scr_parse_room(text);
-if (room_index) {
-    room = room_index;
-}
+if (sugglen < 1) exit;
+var room_index = scr_parse_room(suggestions[suggidx]);
+room = room_index;
 ");
 ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_tab), @"
-if (text == '') exit;
-var name = scr_complete_roomname(text);
-if (name == '') exit;
+if (sugglen < 1) exit;
+var name = suggestions[suggidx];
 text = name;
 length = string_length(name);
 cursor = length;
+suggidx = 0;
 ");
 
 UndertaleGameObject obj_battleselector = new()
@@ -502,19 +501,31 @@ with (obj_roomswitcher) {
     if (!help) {
         if (textprev != text) {
             suggestions = scr_roomname_suggestions(text);
+            sugglen = array_length_1d(suggestions);
         }
         if (text == '') {
             draw_set_color(c_silver);
             draw_text(xx, yy, '> Enter Room Name or ID');
         } else {
             draw_set_color(c_gray);
-            draw_text(xx + string_width('> ' + text), yy, string_delete(scr_complete_roomname(text), 1, length));
+            if (sugglen) {
+                var suggestion = suggestions[suggidx];
+                var lower = string_lower(text);
+                if (string_starts_with(suggestion, lower)) {
+                    suggestion = string_delete(suggestion, 1, length);
+                } else if string_starts_with(suggestion, 'room_' + lower) {
+                    suggestion = string_delete(suggestion, 1, length+5);  // delete 'room_' prefix
+                } else {
+                    suggestion = '';
+                }
+                draw_text(xx + string_width('> ' + text), yy, suggestion);
+            }
 
             draw_set_color(scr_parse_room(text) ? c_yellow : c_white);
             draw_text(xx, yy, '> ' + text);
         }
     }
-    scr_draw_textinput();
+    textinput_draw();
 }
 
 with (obj_battleselector) {
@@ -534,7 +545,7 @@ with (obj_battleselector) {
         }
     }
 
-    scr_draw_textinput();
+    textinput_draw();
 }
 
 // fix for soundtest gui
@@ -913,25 +924,13 @@ xx = x1;
 yy = y1 + 30;
 ");
 
-MakeScript("scr_complete_roomname", @"
-for (var i = 0; room_exists(i); i++) {
-    var name = room_get_name(i);
-    if (string_starts_with(name, argument0)) {
-        return name;
-    }
-    if (string_starts_with(name, 'room_' + argument0)) {
-        return string_replace(name, 'room_', '');
-    }
-}
-return '';
-");
-
 MakeScript("scr_roomname_suggestions", @"
 // should return an empty array but whatever gms1 sucks
 if (argument0 == '') exit;
+var input = string_lower(argument0);
 
 var suggestions = -1 /* empty array?? */;
-var maybeid = real(argument0);
+var maybeid = real(input);
 var idx = 0;
 if (maybeid && room_exists(maybeid)) {
     suggestions[0] = room_get_name(maybeid);
@@ -940,13 +939,13 @@ if (maybeid && room_exists(maybeid)) {
 
 for (var i = 0; room_exists(i); i++) {
     var name = room_get_name(i);
-    if (string_starts_with(name, argument0)) {
+    if (string_starts_with(string_lower(name), input)) {
         suggestions[idx++] = name;
     }
 }
 for (var i = 0; room_exists(i); i++) {
     var name = room_get_name(i);
-    if (string_starts_with(name, 'room_' + argument0)) {
+    if (string_starts_with(string_lower(name), 'room_' + input)) {
         suggestions[idx++] = name;
     }
 }
@@ -1013,14 +1012,13 @@ return 'Neutral';
 
 
 // Idk how people were able to use GMS1, this sucks ass.
-// Recreation of GMS 2.3 function (WITH CASE IGNORE).
+// Recreation of GMS 2.3 function.
 MakeScript("string_starts_with", @"
 var len = string_length(argument1);
 if (len > string_length(argument0)) return false;
 var i = 1;
 while (i <= len) {
-    // i don't care about non-ascii
-    if ((string_byte_at(argument0, i) | 0x20) != (string_byte_at(argument1, i)) | 0x20) {
+    if (string_byte_at(argument0, i) != string_byte_at(argument1, i)) {
         return false;
     }
     i++;
@@ -1639,6 +1637,8 @@ length = 0;
 cursor = 0;
 help = 0;
 suggestions = -1 /* empty array or whatever */;
+sugglen = 0;
+suggidx = 0;
     ");
     ReplaceCode(EventHandler(textinput, EventType.Destroy, 0u), "global.interact = 0;");
     ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_left), @"
@@ -1653,6 +1653,20 @@ if (keyboard_check(vk_control)) {
     cursor = length;
 } else if (cursor < length)  {
     cursor++;
+}
+    ");
+    ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_up), @"
+if (keyboard_check(vk_control)) {
+    suggidx = 0;
+} else if (suggidx > 0)  {
+    suggidx--;
+}
+    ");
+    ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_down), @"
+if (keyboard_check(vk_control)) {
+    suggidx = sugglen-1;
+} else if (suggidx < sugglen-1)  {
+    suggidx++;
 }
     ");
     ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_backspace), @"
@@ -1678,7 +1692,12 @@ if (keyboard_check(vk_control)) {
 // remove shitass DEL character that the runner apparently thinks is printable
 keyboard_string = string_delete(keyboard_string, string_length(keyboard_string), 1);
     ");
-    ReplaceCode(EventHandler(textinput, EventSubtypeStep.BeginStep), @"textprev = text;");
+    ReplaceCode(EventHandler(textinput, EventSubtypeStep.BeginStep), @"
+if (text != textprev) {
+    suggidx = 0;
+}
+textprev = text;
+");
     ReplaceCode(EventHandler(textinput, EventSubtypeStep.Step), @"
 global.interact = 1;
 if (keyboard_string == '') exit;
@@ -1696,7 +1715,7 @@ if (string_pos('?', keyboard_string)) {
 keyboard_string = '';
     ");
 
-    MakeScript("scr_draw_textinput", @"
+    MakeScript("textinput_draw", @"
 if (help) {
     draw_set_color(c_white);
     draw_text(xx, yy+00, 'Enter:  Confirm/Close');
@@ -1711,18 +1730,18 @@ draw_set_color(c_silver);
 draw_text(x2 - 64, y1, help ? '? to close' : '? for help');
 
 if (help) exit;
+
 var cursor_pos = string_width(string_copy(text, 1, cursor)) + string_width('> ');
 draw_set_alpha(0.8);
 draw_set_color(c_aqua);
 draw_rectangle(xx+cursor_pos, yy+4, xx+cursor_pos, yy+2+font_get_size(fnt_maintext), false);
 draw_set_alpha(1);
 
-draw_set_color(c_white);
 yy += 20;
-var len = array_length_1d(suggestions);
-for (var i = 0; i < len && yy < y2-13; i++) {
+for (var i = 0; i < sugglen && yy < y2-13; i++) {
+    draw_set_color(i == suggidx ? c_aqua : c_white);
     draw_text(xx, yy, suggestions[i]);
-    yy += 13;
+    yy += 15;
 }
     ");
 
