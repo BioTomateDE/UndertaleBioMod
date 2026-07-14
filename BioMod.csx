@@ -91,7 +91,7 @@ UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN");
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
 display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-global._savestateslot = 1;
+global._savestateslot = -1;
 global._thegame = 0;
 global._help = 0;
 global._info = 1;
@@ -311,52 +311,6 @@ scr_savestates();  // warning: this does more than draw
 draw_set_halign(fa_left);
 draw_set_font(fnt_maintext);
 
-with (obj_roomswitcher) {
-    scr_draw_overlay('Room Switcher');
-
-    draw_set_color(c_gray);
-    draw_text(x1, y2-55, 'Press Enter to confirm / close');
-    draw_text(x1, y2-40, 'Press Tab to autocomplete');
-    draw_text(x1, y2-25, 'The room_ prefix is not needed');
-    draw_text(x1, y2-10, 'You can use Ctrl+Backspace, Ctrl+Left and Ctrl+Right');
-
-    if (text == '') {
-        draw_set_color(c_silver);
-        draw_text(xx, yy, '> Enter Room Name or ID');
-    } else {
-        draw_set_color(c_gray);
-        draw_text(xx, yy, '> ' + scr_complete_roomname(text));
-
-        draw_set_color(scr_parse_room(text) ? c_yellow : c_white);
-        draw_text(xx, yy, '> ' + text);
-    }
-
-    scr_draw_textinput_cursor();
-}
-
-with (obj_battleselector) {
-    scr_draw_overlay('Battle Selector');
-
-    draw_set_color(c_gray);
-    draw_text(x1, y2-40, 'Press Enter to confirm / close');
-    draw_text(x1, y2-25, 'Press Tab to autocomplete');
-    draw_text(x1, y2-10, 'You can use Ctrl+Backspace, Ctrl+Left and Ctrl+Right');
-
-    if (text == '') {
-        draw_set_color(c_silver);
-        draw_text(xx, yy, '> Enter Battle Group ID');
-    } else {
-        // draw_set_color(c_gray);
-        // draw_text(xx, yy, '> ' + scr_complete_battlegroup(text));
-
-        //draw_set_color(scr_parse_battlegroup(text) ? c_yellow : c_white);
-        draw_set_color(c_white);
-        draw_text(xx, yy, '> ' + text);
-    }
-
-    scr_draw_textinput_cursor();
-}
-
 // Draw help
 if (global._help) {
     scr_draw_overlay('BioMod');
@@ -405,9 +359,6 @@ if (global._movefree) {
 // This makes sure this variables doesn't stay true forever without a KeyRelease event.
 global._mashing = 0;
 global._movefree = 0;
-
-
-show_debug_message(string_starts_with('water7_older', 'water7'));
 
 // Draw Misc Info in the top-left corner
 if (global._info) {
@@ -491,8 +442,8 @@ if (room == room_battle) {
     if (instance_exists(obj_encountererparent)) {
         draw_text_row('Steps: ' + string(global.encounter) + '/' + string(floor(obj_encountererparent.steps)));
         if (verbose) {
-            draw_text_row('Encounterer: ' + object_get_name(obj_encountererparent.object_index));
             draw_text_row('Steps RNG: ' + string(global._stepmin) + '-' + string(global._stepmax) + ' (Avg: ' + string(floor((global._stepmax + global._stepmin) / 2)) + ')');
+            draw_text_row('Encounterer: ' + object_get_name(obj_encountererparent.object_index));
         }
     }
     if (global.battlegroup) {
@@ -543,6 +494,47 @@ if (global._toasttimer > 0) {
     draw_set_color(c_white);
     draw_text(tx1, ty1, global._toastmsg);
     draw_set_alpha(1);
+}
+
+with (obj_roomswitcher) {
+    scr_draw_overlay('Room Switcher');
+    
+    if (!help) {
+        if (textprev != text) {
+            suggestions = scr_roomname_suggestions(text);
+        }
+        if (text == '') {
+            draw_set_color(c_silver);
+            draw_text(xx, yy, '> Enter Room Name or ID');
+        } else {
+            draw_set_color(c_gray);
+            draw_text(xx + string_width('> ' + text), yy, string_delete(scr_complete_roomname(text), 1, length));
+
+            draw_set_color(scr_parse_room(text) ? c_yellow : c_white);
+            draw_text(xx, yy, '> ' + text);
+        }
+    }
+    scr_draw_textinput();
+}
+
+with (obj_battleselector) {
+    scr_draw_overlay('Battle Selector');
+
+    if (!help) {
+        if (text == '') {
+            draw_set_color(c_silver);
+            draw_text(xx, yy, '> Enter Battle Group ID');
+        } else {
+            // draw_set_color(c_gray);
+            // draw_text(xx, yy, '> ' + scr_complete_battlegroup(text));
+    
+            //draw_set_color(scr_parse_battlegroup(text) ? c_yellow : c_white);
+            draw_set_color(c_white);
+            draw_text(xx, yy, '> ' + text);
+        }
+    }
+
+    scr_draw_textinput();
 }
 
 // fix for soundtest gui
@@ -729,12 +721,17 @@ for (var i = 0; i <= 9; i++) {
 if keyboard_check_pressed(ord('S')) {
     global._toastmsg = 'Loaded slot ' + string(global._savestateslot);
     global._toasttimer = 2.5;
-    directory_create('savestates'); // TODO: does ts work
+    directory_create('savestates');
     // be very careful what the game state is before calling this function
     game_save('savestates/' + string(global._savestateslot));
     global._toastmsg = 'Saved slot ' + string(global._savestateslot);
 }
 else if keyboard_check_pressed(ord('L')) {
+    if (global._savestateslot == -1) {
+        global._toastmsg = 'No slot selected';
+        global._toasttimer = 1.5;
+        exit;
+    }
     var file = 'savestates/' + string(global._savestateslot);
     if (file_exists(file)) {
         game_load(file);
@@ -916,14 +913,6 @@ xx = x1;
 yy = y1 + 30;
 ");
 
-MakeScript("scr_draw_textinput_cursor", @"
-var cursor_pos = string_width(string_copy(text, 1, cursor)) + string_width('> ');
-draw_set_alpha(0.8);
-draw_set_color(c_aqua);
-draw_rectangle(xx+cursor_pos, yy+4, xx+cursor_pos, yy+2+font_get_size(fnt_maintext), false);
-draw_set_alpha(1);
-");
-
 MakeScript("scr_complete_roomname", @"
 for (var i = 0; room_exists(i); i++) {
     var name = room_get_name(i);
@@ -935,6 +924,34 @@ for (var i = 0; room_exists(i); i++) {
     }
 }
 return '';
+");
+
+MakeScript("scr_roomname_suggestions", @"
+// should return an empty array but whatever gms1 sucks
+if (argument0 == '') exit;
+
+var suggestions = -1 /* empty array?? */;
+var maybeid = real(argument0);
+var idx = 0;
+if (maybeid && room_exists(maybeid)) {
+    suggestions[0] = room_get_name(maybeid);
+    idx++;
+}
+
+for (var i = 0; room_exists(i); i++) {
+    var name = room_get_name(i);
+    if (string_starts_with(name, argument0)) {
+        suggestions[idx++] = name;
+    }
+}
+for (var i = 0; room_exists(i); i++) {
+    var name = room_get_name(i);
+    if (string_starts_with(name, 'room_' + argument0)) {
+        suggestions[idx++] = name;
+    }
+}
+
+return suggestions;
 ");
 
 MakeScript("scr_getroute", @"
@@ -996,13 +1013,14 @@ return 'Neutral';
 
 
 // Idk how people were able to use GMS1, this sucks ass.
-// Recreation of GMS 2.3 function.
+// Recreation of GMS 2.3 function (WITH CASE IGNORE).
 MakeScript("string_starts_with", @"
 var len = string_length(argument1);
 if (len > string_length(argument0)) return false;
 var i = 1;
 while (i <= len) {
-    if (string_byte_at(argument0, i) != string_byte_at(argument1, i)) {
+    // i don't care about non-ascii
+    if ((string_byte_at(argument0, i) | 0x20) != (string_byte_at(argument1, i)) | 0x20) {
         return false;
     }
     i++;
@@ -1267,7 +1285,7 @@ if (FIX)
 {
     // Fixes (half) softlock in some cases
     PrependCode(EventHandler("obj_time", EventSubtypeStep.EndStep), "if (room == room_start) room_goto_next();");
-    
+
     // Fix crashes for OBJ_WRITER Create when global.msg[0] == "%%%"
     PrependCode(EventHandler("OBJ_WRITER", EventType.Create, 0u), "mystring[0] = '%%%'");
 
@@ -1616,8 +1634,11 @@ UndertaleGameObject ImplTextInput()
     ReplaceCode(EventHandler(textinput, EventType.Create, 0u), @"
 keyboard_string = '';
 text = '';
+textprev = '';
 length = 0;
 cursor = 0;
+help = 0;
+suggestions = -1 /* empty array or whatever */;
     ");
     ReplaceCode(EventHandler(textinput, EventType.Destroy, 0u), "global.interact = 0;");
     ReplaceCode(EventHandler(textinput, EventType.KeyPress, vk_left), @"
@@ -1657,16 +1678,54 @@ if (keyboard_check(vk_control)) {
 // remove shitass DEL character that the runner apparently thinks is printable
 keyboard_string = string_delete(keyboard_string, string_length(keyboard_string), 1);
     ");
+    ReplaceCode(EventHandler(textinput, EventSubtypeStep.BeginStep), @"textprev = text;");
     ReplaceCode(EventHandler(textinput, EventSubtypeStep.Step), @"
 global.interact = 1;
-if (keyboard_string != '') {
+if (keyboard_string == '') exit;
+if (string_pos('?', keyboard_string)) {
+    help = !help;
+    text = '';
+    length = 0;
+    cursor = 0;
+} else {
     var inslen = string_length(keyboard_string);
     text = string_insert(keyboard_string, text, cursor+1);
     length += inslen;
     cursor += inslen;
-    keyboard_string = '';
+}
+keyboard_string = '';
+    ");
+
+    MakeScript("scr_draw_textinput", @"
+if (help) {
+    draw_set_color(c_white);
+    draw_text(xx, yy+00, 'Enter:  Confirm/Close');
+    draw_text(xx, yy+15, 'Backspace/Delete:  Delete previous/next character');
+    draw_text(xx, yy+30, 'Ctrl+Backspace:  Delete entire query');
+    draw_text(xx, yy+45, 'Left/Right:  Move text cursor by one character');
+    draw_text(xx, yy+60, 'Ctrl+Left/Right:  Move text cursor to start/end');
+    draw_text(xx, yy+75, 'Tab:  Autocomplete suggested entry');
+}
+
+draw_set_color(c_silver);
+draw_text(x2 - 64, y1, help ? '? to close' : '? for help');
+
+if (help) exit;
+var cursor_pos = string_width(string_copy(text, 1, cursor)) + string_width('> ');
+draw_set_alpha(0.8);
+draw_set_color(c_aqua);
+draw_rectangle(xx+cursor_pos, yy+4, xx+cursor_pos, yy+2+font_get_size(fnt_maintext), false);
+draw_set_alpha(1);
+
+draw_set_color(c_white);
+yy += 20;
+var len = array_length_1d(suggestions);
+for (var i = 0; i < len && yy < y2-13; i++) {
+    draw_text(xx, yy, suggestions[i]);
+    yy += 13;
 }
     ");
+
     return textinput;
 }
 
