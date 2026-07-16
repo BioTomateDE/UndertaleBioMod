@@ -268,9 +268,10 @@ UndertaleGameObject obj_roomswitcher = new()
 Data.GameObjects.Add(obj_roomswitcher);
 ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_enter), @"
 instance_destroy();
-if (sugglen < 1) exit;
-var room_index = scr_parse_room(suggestions[suggidx]);
-room = room_index;
+var room_index = scr_parse_room(text);
+if (room_index) {
+    room = room_index;
+}
 ");
 ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_tab), @"
 if (sugglen < 1) exit;
@@ -497,7 +498,7 @@ if (global._toasttimer > 0) {
 
 with (obj_roomswitcher) {
     scr_draw_overlay('Room Switcher');
-    
+
     if (!help) {
         if (textprev != text) {
             suggestions = scr_roomname_suggestions(text);
@@ -538,7 +539,7 @@ with (obj_battleselector) {
         } else {
             // draw_set_color(c_gray);
             // draw_text(xx, yy, '> ' + scr_complete_battlegroup(text));
-    
+
             //draw_set_color(scr_parse_battlegroup(text) ? c_yellow : c_white);
             draw_set_color(c_white);
             draw_text(xx, yy, '> ' + text);
