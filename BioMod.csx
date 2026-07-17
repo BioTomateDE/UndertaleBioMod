@@ -43,6 +43,12 @@ const string MAGIC = "$$biomod";
 const string WATERMARK = MAGIC + MOD_VERSION;
 
 EnsureDataLoaded();
+if (CheckAlreadyPatched()) return;
+UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN");
+Dictionary<string, (int, UndertaleGameObject)> ObjectMap = new();
+MapObjects();
+var utVer = DetectUndertaleVersion();
+Console.WriteLine("Detected Undertale v" + utVer);
 
 CodeImportGroup importGroup = new(Data)
 {
@@ -81,12 +87,6 @@ MakeKeyMacro("SPEEDHACK_FAST", SPEEDHACK_FAST_KEY);
 MakeKeyMacro("PUNCHCARD", GET_PUNCHCARD_KEY);
 MakeKeyMacro("CANCEL", CANCEL_KEY);
 MakeKeyMacro("STOPAUDIO", STOP_AUDIO_KEY);
-
-Dictionary<string, (int, UndertaleGameObject)> ObjectMap = new();
-MapObjects();
-
-if (CheckAlreadyPatched()) return;
-UndertaleString watermark = Data.Strings.MakeString(WATERMARK + "_BROKEN");
 
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
 display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -1819,6 +1819,32 @@ bool CheckAlreadyPatched()
         }
     }
     return false;
+}
+
+string DetectUndertaleVersion()
+{
+    string code = GetDecompiledText(EventHandler("obj_intromenu", EventSubtypeDraw.Draw));
+    if (GotoStringEnd(code, "var version = \"") is string code2)
+    {
+        return StringUntil(code2, "\"");
+    }
+    if (GotoStringEnd(code, "UNDERTALE v") is string code3) {
+        return StringUntil(code3, " ");
+    }
+    throw new Err("Couldn't find Undertale version in obj_intromenu draw code");
+}
+
+string? GotoStringEnd(string str, string query)
+{
+    int idx = str.IndexOf(query);
+    if (idx == -1) return null;
+    return str.Substring(idx + query.Length);
+}
+
+string StringUntil(string str, string query) {
+    int idx = str.IndexOf(query);
+    if (idx == -1) throw new Err($"Could not find query {Escape(query)} in string");
+    return str.Substring(0, idx);
 }
 
 string BattlegroupCode => @"
