@@ -1073,6 +1073,52 @@ if (global._hitbox) {
 }
 ");
 
+// draws preview of the waterfall "bridgeseed" lilypad
+// TODO: this kinda breaks the rule of "no vanilla modification without modules",
+// but it looks ugly with hitbox overlay. maybe a new module for this, if i can make more similar stuff?
+ReplaceCode(EventHandler("obj_waterboard", EventSubtypeDraw.Draw), @"
+draw_self();
+if (using == 1) {
+    var xx = obj_mainchara.x;
+    var yy = obj_mainchara.y;
+    var checkx, checky;
+    if (global.facing == 0) {
+        checkx = xx + 10;
+        checky = yy + 40;
+        yy += 30;
+    }
+    else if (global.facing == 1) {
+        checkx = xx + 30;
+        checky = yy + 20;
+        xx += 20;
+        yy += 10;
+    }
+    else if (global.facing == 2) {
+        checkx = xx + 10;
+        checky = yy;
+    }
+    else if (global.facing == 3) {
+        checkx = xx - 10;
+        checky = yy + 20;
+        xx -= 20;
+        yy += 10;
+    }
+
+    // manual implementation of `move_snap()`
+    xx = round(xx / 20) * 20;
+    yy = round(yy / 20) * 20;
+
+    // draw at xx, yy with alpha 0.3
+    if (
+        position_meeting(checkx, checky, obj_waterspot)
+        && !position_meeting(checkx, checky, obj_npc_marker)
+        && !collision_point(checkx, checky, obj_waterboard, 0, 1)
+    ) {
+        draw_sprite_ext(spr_bridgeseed, 0, xx, yy, 1, 1, 0, -1, 0.3);
+    }
+}
+");
+
 MakeScript("scr_itemname_good", ItemNameCode);
 
 MakeScript("scr_itemstat", @"
