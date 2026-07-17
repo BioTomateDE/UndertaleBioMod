@@ -36,6 +36,7 @@ var SPEEDHACK_FAST_KEY = F;     // Increases the game speed to SPEEDHACK_FAST_FP
 var GET_PUNCHCARD_KEY = P;      // Gives you a punchcard in the first inventory slot
 var CANCEL_KEY = E;             // Stops an encounter or battle immediately, skips the intro, skips gameover
 var STOP_AUDIO_KEY = A;         // Stops all currently playing music and sounds
+var PRECISION_KEY = P;          // Makes you move one pixel per frame (useful for debugging)
 // ================================================
 
 const string MOD_VERSION = "0";
@@ -91,19 +92,19 @@ MakeKeyMacro("STOPAUDIO", STOP_AUDIO_KEY);
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
 display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-global._savestateslot = -1;
-global._thegame = 0;
 global._help = 0;
 global._info = 1;
 global._hitbox = 0;
 global._noclip = 0;
 global._mashing = 0;
 global._movefree = 0;
+global._precision = 0;
+global._speedhack = 30;
 
+global._thegame = 0;
+global._savestateslot = 1;
 global._toastmsg = '';
 global._toasttimer = 0;
-
-global._speedhack = 30;
 global._stepmin = 0;
 global._stepmax = 0;
 ");
@@ -229,7 +230,10 @@ global._toasttimer = 1.5;
 ");
 
 RegisterHotkey(SHOW_INFO_KEY, "if (++global._info > 2) global._info = 0;", true);
-RegisterHotkey(HELP_KEY, "global._help = !global._help; global._thegame = obj_time.time % 66 == 0", true);
+RegisterHotkey(HELP_KEY, @"
+global._help = !global._help;
+global._thegame = obj_time.time % 66 == 0;
+", true);
 ReplaceCode(EventHandler("obj_time", EventSubtypeOther.RoomStart), "room_speed = global._speedhack;");
 
 RegisterHotkey(SPEEDHACK_FAST_KEY, @"
@@ -305,6 +309,20 @@ instance_create(0, 0, obj_battleselector);
 global._help = 0;
 ", true);
 
+RegisterHotkey(PRECISION_KEY, @"global._precision = !global._precision;");
+var movecode = EventHandler("obj_mainchara", EventSubtypeStep.Step);
+FindReplaceCode(movecode, "x -= 2;", "x -= global._precision ? 1 : 2;");
+FindReplaceCode(movecode, "x -= 3;", "x -= global._precision ? 1 : 3;");
+FindReplaceCode(movecode, "x += 2;", "x += global._precision ? 1 : 2;");
+FindReplaceCode(movecode, "y -= 3;", "y -= global._precision ? 1 : 3;");
+FindReplaceCode(movecode, "x += 3;", "x += global._precision ? 1 : 3;");
+FindReplaceCode(movecode, "y += 3;", "y += global._precision ? 1 : 3;");
+var wallcode = CollisionHandler("obj_mainchara", "obj_solidparent");
+FindReplaceCode(wallcode, "x -= 3;", "x -= global._precision ? 1 : 3;");
+FindReplaceCode(wallcode, "y -= 3;", "y -= global._precision ? 1 : 3;");
+FindReplaceCode(wallcode, "x += 3;", "x += global._precision ? 1 : 3;");
+FindReplaceCode(wallcode, "y += 3;", "y += global._precision ? 1 : 3;");
+
 ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
 scr_savestates();  // warning: this does more than draw
 
@@ -347,6 +365,9 @@ if (global._hitbox) {
 }
 if (global._noclip) {
     scr_draw_module_text('Noclip');
+}
+if (global._precision) {
+    scr_draw_module_text('Precise movement');
 }
 if (global._mashing) {
     scr_draw_module_text('Mashing text');
@@ -739,11 +760,6 @@ if keyboard_check_pressed(ord('S')) {
     global._toastmsg = 'Saved slot ' + string(global._savestateslot);
 }
 else if keyboard_check_pressed(ord('L')) {
-    if (global._savestateslot == -1) {
-        global._toastmsg = 'No slot selected';
-        global._toasttimer = 1.5;
-        exit;
-    }
     var file = 'savestates/' + string(global._savestateslot);
     if (file_exists(file)) {
         game_load(file);
@@ -1051,10 +1067,21 @@ if (global._hitbox) {
     draw_set_alpha(1);
     draw_set_color(c_aqua);
 
-    // Coords taken from gml_Object_obj_torieltrigger2_Step_0 and adjusted for bbox
+    // Coords taken from gml_Object_obj_torieltrigger2_Step_0 and adjusted for bbox.
     // The numbers in parens are not important, they could be -inf and inf.
     draw_line(160, (188), 160, (240));
     draw_line((0), 188, (160), 188);
+}
+");
+
+// Show boardride event trigger in room_water7 (right before first undyne spears)
+ReplaceCode(EventHandler("obj_boardride_a", EventSubtypeDraw.DrawEnd), @"
+if (global._hitbox) {
+    draw_set_alpha(1);
+    draw_set_color(c_aqua);
+
+    // Coords taken from gml_Object_obj_boardride_a_Step_0 and adjusted for bbox.
+    draw_rectangle(x + 16, y + 18, x + 24, y + 2, true);
 }
 ");
 
