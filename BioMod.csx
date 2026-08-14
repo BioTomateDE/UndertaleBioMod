@@ -1,4 +1,4 @@
-// Script by BioTomateDE for UndertaleModTool v0.9.0.0
+// Script by BioTomateDE for UndertaleModTool v0.9
 // SPDX-License-Identifier: GPL-3.0-only
 
 // NOTE: Still in early development. Use with caution.
@@ -36,7 +36,7 @@ var SPEEDHACK_FAST_KEY = F;     // Increases the game speed to SPEEDHACK_FAST_FP
 var GET_PUNCHCARD_KEY = P;      // Gives you a punchcard in the first inventory slot
 var CANCEL_KEY = E;             // Stops an encounter or battle immediately, skips the intro, skips gameover
 var STOP_AUDIO_KEY = A;         // Stops all currently playing music and sounds
-var PRECISION_KEY = P;          // Makes you move one pixel per frame (useful for debugging)
+var PRECISION_KEY = vk_f2;      // Makes you move one pixel per frame (useful for debugging)
 // ================================================
 
 const string MOD_VERSION = "0";
@@ -458,7 +458,9 @@ if (room == room_battle) {
         }
     }
     draw_text_row('Room: ' + string(room) + ' (' + room_get_name(room) + ')');
-    draw_text_row('Interact: ' + string(global.interact));
+    if (instance_exists(obj_mainchara)) {
+        draw_text_row('Interact: ' + string(global.interact));
+    }
     draw_text_row('Plot: ' + string(global.plot));
     if (instance_exists(obj_encountererparent)) {
         draw_text_row('Steps: ' + string(global.encounter) + '/' + string(floor(obj_encountererparent.steps)));
@@ -878,7 +880,8 @@ if (global.flag[6] && global.turn < 1) {
     return 0;
 }
 
-// deep magic
+// EVIL flag arithmetic hacking
+// (flag 6 is hardmode; hardmode has one extra unfleeable turn)
 return min(100, 50 + 10 * (global.turn - global.flag[6]));
 ");
 
@@ -1082,6 +1085,18 @@ if (global._hitbox) {
 
     // Coords taken from gml_Object_obj_boardride_a_Step_0 and adjusted for bbox.
     draw_rectangle(x + 16, y + 18, x + 24, y + 2, true);
+}
+");
+
+// Show first undyne spears event trigger in room_water8
+GetObject("obj_undyneencounter1").Visible = true;
+ReplaceCode(EventHandler("obj_undyneencounter1", EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_set_alpha(1);
+    draw_set_color(c_aqua);
+
+    // Coords taken from gml_Object_obj_undyneencounter1_Step_0 and adjusted for bbox.
+    draw_line(x + 20, 0, x + 20, 999);
 }
 ");
 
@@ -1492,18 +1507,16 @@ ScriptMessage($"Successfully patched BioMod v{MOD_VERSION}!\nPress {KeyName(HELP
 ////////////////////////////////////////////////// HELPERS
 class Err : Exception
 {
-    const string END = "\n\n(This data file is now probably broken, please reload.)\n\nYou can ignore this garbage:";
+    const string END = "\n\n(This data file is now probably broken, please reload.)\n\n";
     public Err() { }
     public Err(string message) : base("\n" + message + END) { }
     public Err(string message, Exception inner) : base("\n" + message + END, inner) { }
 }
 
-void MakeMacro(string name, string value, bool onlyAllowIdentifier = false)
+void MakeMacro(string name, string value)
 {
     if (!IsValidIdentifier(name))
         throw new Err($"Invalid name {Escape(name)} for macro with value {Escape(value)}");
-    if (onlyAllowIdentifier && !IsValidIdentifier(value))
-        throw new Err($"Invalid macro value identifier {Escape(value)} for macro {Escape(name)}");
     Macros.Add((name, value));
 }
 
@@ -1873,23 +1886,22 @@ bool CheckAlreadyPatched()
     foreach (UndertaleString utstring in Data.Strings)
     {
         string str = utstring?.Content ?? "";
-        if (str.StartsWith(MAGIC))
+        if (!str.StartsWith(MAGIC)) continue;
+        if (str == WATERMARK)
         {
-            if (str == WATERMARK)
-            {
-                ScriptMessage("Already patched!");
-            }
-            else if (str.EndsWith("_BROKEN"))
-            {
-                ScriptError("This data file is broken because BioMod previously crashed while patching. " + LOADVANILLA);
-            }
-            else
-            {
-                string v = str.Substring(MAGIC.Length);
-                ScriptError($"Found existing BioMod v{v}. This script patches BioMod v{MOD_VERSION}. " + LOADVANILLA);
-            }
-            return true;
+            ScriptMessage("Already patched!");
         }
+        else if (str.EndsWith("_BROKEN"))
+        {
+            ScriptError("This data file is broken because BioMod previously crashed while patching. " + LOADVANILLA);
+        }
+        else
+        {
+            string v = str.Substring(MAGIC.Length);
+            ScriptError($"Found existing BioMod v{v}. This script patches BioMod v{MOD_VERSION}. " + LOADVANILLA);
+        }
+        return true;
+
     }
     return false;
 }
@@ -1901,7 +1913,8 @@ string DetectUndertaleVersion()
     {
         return StringUntil(code2, "\"");
     }
-    if (GotoStringEnd(code, "UNDERTALE v") is string code3) {
+    if (GotoStringEnd(code, "UNDERTALE v") is string code3)
+    {
         return StringUntil(code3, " ");
     }
     throw new Err("Couldn't find Undertale version in obj_intromenu draw code");
@@ -1914,7 +1927,8 @@ string? GotoStringEnd(string str, string query)
     return str.Substring(idx + query.Length);
 }
 
-string StringUntil(string str, string query) {
+string StringUntil(string str, string query)
+{
     int idx = str.IndexOf(query);
     if (idx == -1) throw new Err($"Could not find query {Escape(query)} in string");
     return str.Substring(0, idx);
