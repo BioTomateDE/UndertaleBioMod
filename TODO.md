@@ -32,6 +32,7 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 ## Small QOL
 * polish textinput completion (room/battlegroup selector): up/down arrow cycling between suggestions, ctrl+up/down for cycling pages?
 * Polish the battlegroup selector
+* precision key in battle (also ice maybe)
 
 ## Fixes
 * Fix runtime error for 1.00

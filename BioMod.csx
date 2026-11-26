@@ -88,6 +88,7 @@ MakeKeyMacro("SPEEDHACK_FAST", SPEEDHACK_FAST_KEY);
 MakeKeyMacro("PUNCHCARD", GET_PUNCHCARD_KEY);
 MakeKeyMacro("CANCEL", CANCEL_KEY);
 MakeKeyMacro("STOPAUDIO", STOP_AUDIO_KEY);
+MakeKeyMacro("PRECISION", PRECISION_KEY);
 
 AppendCode(EventHandler("obj_time", EventSubtypeOther.GameStart), @"
 display_set_gui_size(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -274,7 +275,7 @@ ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_enter), @"
 instance_destroy();
 var room_index = scr_parse_room(text);
 if (room_index) {
-    room = room_index;
+    room_goto(room_index);
 }
 ");
 ReplaceCode(EventHandler(obj_roomswitcher, EventType.KeyPress, vk_tab), @"
@@ -299,7 +300,7 @@ instance_destroy();
 var bgroup = real(text);
 if (scr_battlegroup_name(bgroup) != 'Unknown') {
     global.battlegroup = bgroup;
-    room = room_battle;
+    room_goto(room_battle);
     //instance_create(0, 0, obj_battler);
 }
 ");
@@ -353,6 +354,7 @@ if (global._help) {
     scr_draw_help_row(KEY_PUNCHCARD, 'Gives you a punchcard (needs menu and dialogue closed)');
     scr_draw_help_row(KEY_CANCEL, 'Cancels battles, skips intro/gameover');
     scr_draw_help_row(KEY_STOPAUDIO, 'Stops all currently playing music and sounds');
+    scr_draw_help_row(KEY_PRECISION, 'Limits your speed to 1 pixel per frame');
 }
 
 // Draw active modules in rainbow color in the top-right corner
@@ -1457,7 +1459,7 @@ instance_create(0, 0, obj_rborder);
     // Fix door crash in room 300 (room_ruins12B_old)
     AppendCode(EventHandler("obj_doorD", EventType.Alarm, 2u), @"
 if (room == room_ruins12B_old) {
-    room = room_ruins12;
+    room_goto(room_ruins12);
     global.entrance = 2;
 }
 ");
@@ -1473,12 +1475,12 @@ triggery = 263;
     ");
 
     // Fix doors in room 302 (room_water7_older)
-    AppendCode(EventHandler("obj_doorB", EventType.Alarm, 2u), "if (room == room_water7_older) room = room_water6;");
-    AppendCode(EventHandler("obj_doorA", EventType.Alarm, 2u), "if (room == room_water7_older) room = room_water8;");
+    AppendCode(EventHandler("obj_doorB", EventType.Alarm, 2u), "if (room == room_water7_older) room_goto(room_water6);");
+    AppendCode(EventHandler("obj_doorA", EventType.Alarm, 2u), "if (room == room_water7_older) room_goto(room_water8);");
 
     // Fix doors in room 303 (room_meetundyne_old)
-    AppendCode(EventHandler("obj_doorD", EventType.Alarm, 2u), "if (room == room_meetundyne_old) room = room_water3;");
-    AppendCode(EventHandler("obj_doorA", EventType.Alarm, 2u), "if (room == room_meetundyne_old) room = room_water_bridgepuzz1;");
+    AppendCode(EventHandler("obj_doorD", EventType.Alarm, 2u), "if (room == room_meetundyne_old) room_goto(room_water3);");
+    AppendCode(EventHandler("obj_doorA", EventType.Alarm, 2u), "if (room == room_meetundyne_old) room_goto(room_water_bridgepuzz1);");
 
     // Fix instant crash for manually going into room 310 (room_gameover)
     AppendCode(Data.Scripts.ByName("SCR_GAMESTART").Code, "global.myxb = 420; global.myyb = 69;");
@@ -1544,7 +1546,6 @@ void MakeKeyMacro(string name, EventSubtypeKey key)
 string ApplyMacros(string sourceCode)
 {
     // not very performant but who cares
-    // TODO: should this resolve macros recursively?
     foreach (var (name, value) in Macros)
     {
         sourceCode = sourceCode.Replace(name, value);
