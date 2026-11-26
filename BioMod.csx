@@ -1079,6 +1079,26 @@ if (global._hitbox) {
 }
 ");
 
+// Show electric shock area for Papyrus' puzzle in room_tundra7
+GetObject("obj_shockblock").Visible = true;
+// GetObject("obj_shockblock").ParentId = GetObject("obj_solidparent");
+ReplaceCode(EventHandler("obj_shockblock", EventSubtypeDraw.Draw), @"
+if (global._hitbox) {
+    draw_self();
+}
+");
+PrependCode(EventHandler("obj_shockblock", EventType.Create, 0u), @"
+image_alpha = 0.69;
+");
+if (FIX) // allows movement when shocked + no teleport
+{
+    PrependCode(FindFriskCollision("obj_shockblock"), "if (global._noclip) exit;");
+    FindReplaceCode(FindFriskCollision("obj_shockblock"), "shocking = 1;", "shocking=1; memoryx=obj_mainchara.xprevious; memoryy=obj_mainchara.yprevious;");
+    FindReplaceCode(EventHandler("obj_shockblock", EventSubtypeStep.Step), "solid =", "//");
+    FindReplaceCode(EventHandler("obj_shockblock", EventSubtypeStep.Step), "memoryx =", "//");
+    FindReplaceCode(EventHandler("obj_shockblock", EventSubtypeStep.Step), "memoryy =", "//");
+}
+
 // Show boardride event trigger in room_water7 (right before first undyne spears)
 ReplaceCode(EventHandler("obj_boardride_a", EventSubtypeDraw.DrawEnd), @"
 if (global._hitbox) {
@@ -1663,6 +1683,9 @@ if (global._hitbox) {
     ");
     if (!render) SuppressRendering(objectName);
 }
+
+UndertaleCode FindFriskCollision(string objName) => FindFriskCollision(GetObject(objName))
+    ?? throw new Exception($"Could not find Frisk collision with object {objName}");
 
 UndertaleCode? FindFriskCollision(UndertaleGameObject obj)
 {
