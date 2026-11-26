@@ -32,14 +32,13 @@ Feel free to open an Issue/PR to add stuff to this list (or implement it!).
 ## Small QOL
 * polish textinput completion (room/battlegroup selector): up/down arrow cycling between suggestions, ctrl+up/down for cycling pages?
 * Polish the battlegroup selector
-* precision key in battle (also ice maybe)
+* precision key for ice maybe
 
 ## Fixes
 * Fix runtime error for 1.00
 * global.inv does not always seem to be the max invincibility
 * text masher in battle doesnt (always) press X
 * text masher fucks up papdate at "GO AHEAD! OPEN IT!"
-* room selector autocomplete should work alphabetically not chronologically (also water7_ doesnt get autocompleted)
 * visual bug with blue soul in myfight menu (sans)
 * floweybattle noclip and cancel
 * vanilla bug: when u exit battle fast, the bg music is quieter
