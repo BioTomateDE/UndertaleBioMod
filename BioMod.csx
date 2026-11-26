@@ -310,7 +310,7 @@ instance_create(0, 0, obj_battleselector);
 global._help = 0;
 ", true);
 
-RegisterHotkey(PRECISION_KEY, @"global._precision = !global._precision;");
+RegisterHotkey(PRECISION_KEY, @"global._precision = !global._precision;", true);
 var movecode = EventHandler("obj_mainchara", EventSubtypeStep.Step);
 FindReplaceCode(movecode, "x -= 2;", "x -= global._precision ? 1 : 2;");
 FindReplaceCode(movecode, "x -= 3;", "x -= global._precision ? 1 : 3;");
@@ -323,6 +323,12 @@ FindReplaceCode(wallcode, "x -= 3;", "x -= global._precision ? 1 : 3;");
 FindReplaceCode(wallcode, "y -= 3;", "y -= global._precision ? 1 : 3;");
 FindReplaceCode(wallcode, "x += 3;", "x += global._precision ? 1 : 3;");
 FindReplaceCode(wallcode, "y += 3;", "y += global._precision ? 1 : 3;");
+foreach (var key in (EventSubtypeKey[])[vk_down, vk_right, vk_up, vk_left])
+{
+    var code = EventHandler("obj_heart", EventType.Keyboard, (uint)key);
+    FindReplaceCode(code, "global.sp", "_speed");
+    PrependCode(code, "var _speed = global._precision ? 2 : global.sp;");
+}
 
 ReplaceCode(EventHandler("obj_time", EventSubtypeDraw.DrawGUIEnd), @"
 scr_savestates();  // warning: this does more than draw
@@ -925,9 +931,9 @@ for (var i = 0; i < len; i++) {
 
 MakeScript("scr_draw_overlay", @"
 x1 = SCREEN_WIDTH * 0.2;
-y1 = SCREEN_HEIGHT * 0.25;
+y1 = SCREEN_HEIGHT * 0.22;
 x2 = SCREEN_WIDTH * 0.8;
-y2 = SCREEN_HEIGHT * 0.75;
+y2 = SCREEN_HEIGHT * 0.78;
 
 draw_set_color(c_black);
 draw_set_alpha(BG_OPACITY);
@@ -1081,7 +1087,6 @@ if (global._hitbox) {
 
 // Show electric shock area for Papyrus' puzzle in room_tundra7
 GetObject("obj_shockblock").Visible = true;
-// GetObject("obj_shockblock").ParentId = GetObject("obj_solidparent");
 ReplaceCode(EventHandler("obj_shockblock", EventSubtypeDraw.Draw), @"
 if (global._hitbox) {
     draw_self();
